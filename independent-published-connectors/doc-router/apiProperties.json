@@ -13,6 +13,19 @@
             "required": "true"
           }
         }
+      },
+      "organization_id": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Organization ID",
+          "description": "Your DocRouter organization ID. Find it in the DocRouter app under Settings → Organization.",
+          "tooltip": "Provide your DocRouter organization ID",
+          "constraints": {
+            "tabIndex": 3,
+            "clearText": true,
+            "required": "true"
+          }
+        }
       }
     },
     "iconBrandColor": "#2563EB",
