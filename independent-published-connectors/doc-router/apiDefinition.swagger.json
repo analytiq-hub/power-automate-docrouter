@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "DocRouter",
+    "title": "Doc Router Organization",
     "description": "Smart Document Router \u2014 upload documents, run OCR and LLM extraction, manage prompts/schemas/knowledge-bases, and configure webhooks. Use Bearer token authentication (create a token under Settings \u2192 Developer).\n",
     "version": "1.0",
     "contact": {

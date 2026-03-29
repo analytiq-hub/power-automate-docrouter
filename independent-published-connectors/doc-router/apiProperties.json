@@ -29,14 +29,14 @@
       },
       "base_url": {
         "type": "string",
-        "defaultValue": "https://app.docrouter.ai/fastapi",
         "uiDefinition": {
-          "displayName": "Base URL",
-          "description": "Base URL of your DocRouter instance, e.g. https://app.docrouter.ai/fastapi. Change only for on-premises deployments.",
-          "tooltip": "Provide the base URL of your DocRouter instance",
+          "displayName": "Base URL, default: https://app.docrouter.ai/fastapi",
+          "description": "Base URL of your DocRouter instance. Default: https://app.docrouter.ai/fastapi",
+          "tooltip": "Provide the base URL of your DocRouter instance. Default: https://app.docrouter.ai/fastapi",
+          "default": "https://app.docrouter.ai/fastapi",
           "constraints": {
             "tabIndex": 4,
-            "clearText": false,
+            "clearText": true,
             "required": "true"
           }
         }
@@ -44,15 +44,6 @@
     },
     "iconBrandColor": "#2563EB",
     "capabilities": [],
-    "policyTemplateInstances": [
-      {
-        "templateId": "dynamichosturl",
-        "title": "Set base URL from connection",
-        "parameters": {
-          "x-ms-apimTemplateParameter.urlTemplate": "@connectionParameters('base_url')"
-        }
-      }
-    ],
     "publisher": "Analytiq Hub LLC",
     "stackOwner": "DocRouter"
   }
