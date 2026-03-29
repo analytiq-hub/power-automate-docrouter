@@ -15,30 +15,6 @@
   "schemes": [
     "https"
   ],
-  "x-ms-parameterized-host": {
-    "hostTemplate": "https://{host}{basePath}",
-    "useDefaultUrl": true,
-    "parameters": [
-      {
-        "name": "host",
-        "in": "path",
-        "required": true,
-        "type": "string",
-        "default": "app.docrouter.ai",
-        "x-ms-summary": "DocRouter Host",
-        "description": "Hostname of your DocRouter instance. Use app.docrouter.ai for the cloud service, or your own domain for an on-premises deployment.\n"
-      },
-      {
-        "name": "basePath",
-        "in": "path",
-        "required": true,
-        "type": "string",
-        "default": "/fastapi",
-        "x-ms-summary": "Base Path",
-        "description": "API base path. Default is /fastapi; change only for non-standard on-premises deployments."
-      }
-    ]
-  },
   "consumes": [
     "application/json"
   ],
@@ -912,7 +888,14 @@
         ],
         "parameters": [
           {
-            "$ref": "#/parameters/organization_id"
+            "name": "organization_id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "x-ms-summary": "Organization ID",
+            "description": "The unique identifier of your DocRouter organization.",
+            "x-ms-url-encoding": "single",
+            "x-ms-visibility": "internal"
           },
           {
             "name": "skip",
