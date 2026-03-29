@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Emit apiDefinition.swagger.json (OpenAPI 2.0) for DocRouter Account connector."""
+"""Emit apiDefinition.swagger.json (OpenAPI 2.0) for DocRouter Account connector.
+
+Power Automate "Test" compares responses to these schemas. In ../doc-router,
+``UserResponse`` passes ``email_verified`` / ``has_seen_tour`` from raw Mongo
+(``user.get``); those are omitted from declared ``UserResponse`` properties and
+covered by ``additionalProperties`` so PA does not expect strict booleans.
+``has_password`` stays boolean (always ``bool(...)`` in code). Organization
+``default_prompt_enabled`` is stored on org docs — declared as string to avoid
+bool/string mismatches. Request bodies keep boolean types where FastAPI expects them.
+"""
 import json
 
 ORG_MEMBER = {
@@ -24,7 +33,8 @@ DEFS = {
             "name": {"type": "string"},
             "members": {"type": "array", "items": {"$ref": "#/definitions/OrganizationMember"}},
             "type": {"type": "string"},
-            "default_prompt_enabled": {"type": "boolean"},
+            # Mongo org documents; PA may see string vs bool mismatch if legacy data exists.
+            "default_prompt_enabled": {"type": "string"},
             "ocr_config": {"type": "object"},
             "ocr_catalog": {"type": "object"},
         },
@@ -59,16 +69,16 @@ DEFS = {
     },
     "UserResponse": {
         "type": "object",
+        # email_verified / has_seen_tour come from raw Mongo (users.py); omit from properties so
+        # Power Automate does not expect strict booleans (see has_seen_tour string mismatch).
+        "additionalProperties": True,
         "properties": {
             "id": {"type": "string"},
             "email": {"type": "string"},
             "name": {"type": "string"},
             "role": {"type": "string"},
-            "email_verified": {"type": "boolean"},
             "created_at": {"type": "string"},
             "has_password": {"type": "boolean"},
-            # API/DB may surface this as string in some cases; Power Automate Test expects string vs boolean match.
-            "has_seen_tour": {"type": "string", "description": "Tour flag; may be boolean in API but serialized as string."},
         },
     },
     "UserCreate": {

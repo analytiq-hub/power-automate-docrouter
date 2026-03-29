@@ -81,7 +81,7 @@
           "type": "string"
         },
         "default_prompt_enabled": {
-          "type": "boolean"
+          "type": "string"
         },
         "ocr_config": {
           "type": "object"
@@ -156,6 +156,7 @@
     },
     "UserResponse": {
       "type": "object",
+      "additionalProperties": true,
       "properties": {
         "id": {
           "type": "string"
@@ -169,18 +170,11 @@
         "role": {
           "type": "string"
         },
-        "email_verified": {
-          "type": "boolean"
-        },
         "created_at": {
           "type": "string"
         },
         "has_password": {
           "type": "boolean"
-        },
-        "has_seen_tour": {
-          "type": "string",
-          "description": "Tour flag; may be boolean in API but serialized as string."
         }
       }
     },
