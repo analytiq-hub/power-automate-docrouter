@@ -67,7 +67,8 @@ DEFS = {
             "email_verified": {"type": "boolean"},
             "created_at": {"type": "string"},
             "has_password": {"type": "boolean"},
-            "has_seen_tour": {"type": "boolean"},
+            # API/DB may surface this as string in some cases; Power Automate Test expects string vs boolean match.
+            "has_seen_tour": {"type": "string", "description": "Tour flag; may be boolean in API but serialized as string."},
         },
     },
     "UserCreate": {

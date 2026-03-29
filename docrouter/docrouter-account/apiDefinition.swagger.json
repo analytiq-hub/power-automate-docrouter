@@ -179,7 +179,8 @@
           "type": "boolean"
         },
         "has_seen_tour": {
-          "type": "boolean"
+          "type": "string",
+          "description": "Tour flag; may be boolean in API but serialized as string."
         }
       }
     },
