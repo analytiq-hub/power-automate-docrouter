@@ -88,12 +88,10 @@
           "type": "object"
         },
         "created_at": {
-          "type": "string",
-          "format": "date-time"
+          "type": "string"
         },
         "updated_at": {
-          "type": "string",
-          "format": "date-time"
+          "type": "string"
         }
       }
     },
@@ -179,8 +177,7 @@
           "type": "boolean"
         },
         "created_at": {
-          "type": "string",
-          "format": "date-time"
+          "type": "string"
         },
         "has_password": {
           "type": "boolean"
@@ -270,8 +267,7 @@
           "type": "string"
         },
         "created_at": {
-          "type": "string",
-          "format": "date-time"
+          "type": "string"
         },
         "lifetime": {
           "type": "integer",
@@ -448,7 +444,6 @@
         },
         "token_created_at": {
           "type": "string",
-          "format": "date-time",
           "x-nullable": true
         }
       }

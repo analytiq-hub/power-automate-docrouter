@@ -22,8 +22,9 @@ DEFS = {
             "default_prompt_enabled": {"type": "boolean"},
             "ocr_config": {"type": "object"},
             "ocr_catalog": {"type": "object"},
-            "created_at": {"type": "string", "format": "date-time"},
-            "updated_at": {"type": "string", "format": "date-time"},
+            # Plain string: Power Automate response validation often mismatches date-time format vs runtime.
+            "created_at": {"type": "string"},
+            "updated_at": {"type": "string"},
         },
     },
     "OrganizationCreate": {
@@ -62,7 +63,7 @@ DEFS = {
             "name": {"type": "string"},
             "role": {"type": "string"},
             "email_verified": {"type": "boolean"},
-            "created_at": {"type": "string", "format": "date-time"},
+            "created_at": {"type": "string"},
             "has_password": {"type": "boolean"},
             "has_seen_tour": {"type": "boolean"},
         },
@@ -102,7 +103,7 @@ DEFS = {
             "organization_id": {"type": "string", "x-nullable": True},
             "name": {"type": "string"},
             "token": {"type": "string"},
-            "created_at": {"type": "string", "format": "date-time"},
+            "created_at": {"type": "string"},
             "lifetime": {"type": "integer", "format": "int32"},
         },
     },
@@ -177,7 +178,7 @@ DEFS = {
             "litellm_models_chat_agent": {"type": "array", "items": {"type": "string"}},
             "enabled": {"type": "boolean"},
             "token": {"type": "string"},
-            "token_created_at": {"type": "string", "format": "date-time", "x-nullable": True},
+            "token_created_at": {"type": "string", "x-nullable": True},
         },
     },
     "ListLLMProvidersResponse": {
