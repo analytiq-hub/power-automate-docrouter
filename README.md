@@ -9,7 +9,7 @@ The **sandbox** is a minimal Power Automate flow that proves end-to-end file ing
 Typical sequence:
 
 1. **Manually trigger a flow** — run on demand while you test.
-2. **Get file metadata using path** — resolves the file in a SharePoint library (name, path, identifiers).
+2. **Get file metadata using path** — resolves the file in a library (name, path, identifiers); the screenshot uses SharePoint.
 3. **Get file content** — loads the file bytes for the next step.
 4. **Upload Document** (DocRouter Organization RC1) — maps **File name** → `document_name` and **File content** → `content`, then runs OCR/LLM processing on the DocRouter side.
 
@@ -92,6 +92,95 @@ After the connection succeeds, you can build flows such as the sandbox above or 
 ### Alternative: import in the portal
 
 You can also create or refresh a custom connector manually in [Power Automate](https://make.powerautomate.com) or the Power Platform portal by importing the same OpenAPI (`apiDefinition.swagger.json`), properties (`apiProperties.json`), icon, and C# script—`paconn` is the supported path for keeping this repo and the tenant in sync.
+
+## Operations and parameters
+
+The tables below mirror the connector OpenAPI (`independent-published-connectors/doc-router/apiDefinition.swagger.json`). Every HTTP operation lives under `/v0/orgs/{organization_id}/...`. The **`organization_id`** path segment is **not** filled in per action in the designer: it is injected from the **connection** (see `script.csx` and `apiProperties.json`). Query and path parameters marked **internal** or **advanced** in the spec may be hidden or collapsed in the UI.
+
+In **Body** rows, a trailing `*` on a property name (for example `name*`) means **required** in the JSON body.
+
+### Documents
+
+| Summary | Operation ID | HTTP | Parameters (excluding `organization_id`) |
+|---------|--------------|------|------------------------------------------|
+| Delete Document | `DeleteDocument` | DELETE | `document_id` (path, string, req) |
+| Get Document | `GetDocument` | GET | `document_id` (path, string, req)<br>`include_content` (query, boolean, opt, advanced) |
+| List Documents | `ListDocuments` | GET | `skip` (query, integer, opt, advanced)<br>`limit` (query, integer, opt, advanced)<br>`tag_ids` (query, string, opt, advanced)<br>`name_search` (query, string, opt, advanced) |
+| Update Document Metadata | `UpdateDocument` | PUT | `document_id` (path, string, req)<br>**Body** (`DocumentUpdate`): `document_name`, `metadata` (JSON string), `tag_ids` |
+| Upload Document | `UploadDocument` | POST | **Body** (`DocumentUpload`): `content`* (string, byte / Base64), `document_name`*, `metadata` (JSON string), `tag_ids` |
+
+### Knowledge Bases
+
+| Summary | Operation ID | HTTP | Parameters (excluding `organization_id`) |
+|---------|--------------|------|------------------------------------------|
+| Create Knowledge Base | `CreateKnowledgeBase` | POST | **Body** (`KnowledgeBaseConfig`): `name`*; `description`, `embedding_model`, `system_prompt`, `tag_ids` |
+| Delete Knowledge Base | `DeleteKnowledgeBase` | DELETE | `kb_id` (path, string, req) |
+| Get Knowledge Base | `GetKnowledgeBase` | GET | `kb_id` (path, string, req) |
+| List Knowledge Bases | `ListKnowledgeBases` | GET | `name_search`, `skip`, `limit` (query, opt, advanced) |
+| Reconcile Knowledge Base | `ReconcileKnowledgeBase` | POST | `kb_id` (path, string, req) |
+| Search Knowledge Base | `SearchKnowledgeBase` | POST | `kb_id` (path, string, req)<br>**Body** (`KBSearchRequest`): `query`*; `metadata_filter`, `top_k` |
+| Update Knowledge Base | `UpdateKnowledgeBase` | PUT | `kb_id` (path, string, req)<br>**Body** (`KnowledgeBaseConfig`): `name`*; `description`, `embedding_model`, `system_prompt`, `tag_ids` |
+
+### LLM
+
+| Summary | Operation ID | HTTP | Parameters (excluding `organization_id`) |
+|---------|--------------|------|------------------------------------------|
+| Delete LLM Result | `DeleteLLMResult` | DELETE | `document_id` (path, string, req)<br>`prompt_revid` (query, string, req) |
+| Download LLM Result as JSON | `DownloadLLMResult` | GET | `document_id` (path, string, req) |
+| Get LLM Extraction Result | `GetLLMResult` | GET | `document_id` (path, string, req)<br>`prompt_revid` (query, string, opt, advanced) |
+| List Available LLM Models | `ListOrgLLMModels` | GET | `chat_only` (query, boolean, opt, advanced) |
+| Run LLM Extraction on Document | `RunLLM` | POST | `document_id` (path, string, req)<br>`prompt_revid`, `force` (query, opt, advanced) |
+| Update and Verify LLM Result | `UpdateLLMResult` | PUT | `document_id` (path, string, req)<br>`prompt_revid` (query, string, req)<br>**Body** (`UpdateLLMResultRequest`): `updated_llm_result`, `is_verified` |
+
+### OCR
+
+| Summary | Operation ID | HTTP | Parameters (excluding `organization_id`) |
+|---------|--------------|------|------------------------------------------|
+| Export OCR as HTML | `ExportOCRHtml` | GET | `document_id` (path, string, req) |
+| Export OCR as Markdown | `ExportOCRMarkdown` | GET | `document_id` (path, string, req) |
+| Get OCR Metadata | `GetOCRMetadata` | GET | `document_id` (path, string, req) |
+| Get OCR Text | `GetOCRText` | GET | `document_id` (path, string, req)<br>`page_num` (query, integer, opt, advanced) |
+| Run OCR on Document | `RunOCR` | POST | `document_id` (path, string, req)<br>`force`, `ocr_only` (query, opt, advanced) |
+
+### Prompts
+
+| Summary | Operation ID | HTTP | Parameters (excluding `organization_id`) |
+|---------|--------------|------|------------------------------------------|
+| Create Prompt | `CreatePrompt` | POST | **Body** (`PromptConfig`): `name`*, `content`*; `model`, `schema_id`, `tag_ids`, `kb_id` |
+| Delete Prompt (by Prompt ID) | `DeletePrompt` | DELETE | `prompt_id` (path, string, req) |
+| Get Prompt by Revision ID | `GetPromptByRevId` | GET | `prompt_id` (path, string, req) |
+| List Prompt Versions | `ListPromptVersions` | GET | `prompt_id` (path, string, req) |
+| List Prompts | `ListPrompts` | GET | `name_search`, `skip`, `limit` (query, opt, advanced) |
+| Update Prompt (by Prompt ID) | `UpdatePrompt` | PUT | `prompt_id` (path, string, req)<br>**Body** (`PromptConfig`): `name`*, `content`*; `model`, `schema_id`, `tag_ids`, `kb_id` |
+
+### Schemas
+
+| Summary | Operation ID | HTTP | Parameters (excluding `organization_id`) |
+|---------|--------------|------|------------------------------------------|
+| Create Schema | `CreateSchema` | POST | **Body** (`SchemaConfig`): `name`*, `response_format`* (JSON Schema object) |
+| Delete Schema (by Schema ID) | `DeleteSchema` | DELETE | `schema_id` (path, string, req) |
+| Get Schema by Revision ID | `GetSchemaByRevId` | GET | `schema_id` (path, string, req) |
+| List Schema Versions | `ListSchemaVersions` | GET | `schema_id` (path, string, req) |
+| List Schemas | `ListSchemas` | GET | `name_search`, `skip`, `limit` (query, opt, advanced) |
+| Update Schema (by Schema ID) | `UpdateSchema` | PUT | `schema_id` (path, string, req)<br>**Body** (`SchemaConfig`): `name`*, `response_format`* |
+| Validate Data Against Schema | `ValidateSchema` | POST | `schema_id` (path, string, req)<br>**Body** (`SchemaValidateRequest`): `data`* |
+
+### Tags
+
+| Summary | Operation ID | HTTP | Parameters (excluding `organization_id`) |
+|---------|--------------|------|------------------------------------------|
+| Create Tag | `CreateTag` | POST | **Body** (`TagConfig`): `name`*; `color`, `description` |
+| Delete Tag | `DeleteTag` | DELETE | `tag_id` (path, string, req) |
+| Get Tag | `GetTag` | GET | `tag_id` (path, string, req) |
+| List Tags | `ListTags` | GET | `name_search`, `skip`, `limit` (query, opt, advanced) |
+| Update Tag | `UpdateTag` | PUT | `tag_id` (path, string, req)<br>**Body** (`TagConfig`): `name`*; `color`, `description` |
+
+### Triggers
+
+| Summary | Operation ID | HTTP | Parameters (excluding `organization_id`) |
+|---------|--------------|------|------------------------------------------|
+| Unsubscribe from DocRouter Events | `DeleteDocRouterEventSubscription` | DELETE | `subscription_id` (path, string, req) |
+| When a DocRouter Event Occurs | `OnDocRouterEvent` | POST | **Body**: `callbackUrl`*; `events` (array) |
 
 ## Repository layout
 
