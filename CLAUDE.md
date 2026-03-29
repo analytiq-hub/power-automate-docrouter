@@ -84,6 +84,8 @@ Deploy scripts using the `paconn` CLI (installed via `pip install paconn`):
 ./docrouter/docrouter-account/update.sh <connector-id>
 ```
 
+`update.sh` and `download.sh` for each connector read **`ORG_CONNECTOR_ID`** or **`ACCOUNT_CONNECTOR_ID`** from the repo-root `.env` when the connector id is not passed as the first argument (see `.env.example`).
+
 ## Development Workflow
 
 ### Setup

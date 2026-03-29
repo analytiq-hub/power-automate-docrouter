@@ -9,7 +9,7 @@ set -euo pipefail
 #   ./download.sh <connector-id> <environment-guid>
 #
 # Or set in repo-root .env (optional — paconn prompts for anything omitted):
-#   CONNECTOR_ID
+#   ORG_CONNECTOR_ID
 #   POWER_PLATFORM_ENVIRONMENT_ID
 #
 # Optional:
@@ -23,7 +23,7 @@ if [[ -f "$REPO_ROOT/.env" ]]; then
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CONNECTOR_ID="${1:-${CONNECTOR_ID:-}}"
+CONNECTOR_ID="${1:-${ORG_CONNECTOR_ID:-}}"
 ENV_ID="${2:-${POWER_PLATFORM_ENVIRONMENT_ID:-${ENVIRONMENT_ID:-}}}"
 
 DOWNLOAD_ROOT="${DOWNLOAD_ROOT:-$SCRIPT_DIR/download}"

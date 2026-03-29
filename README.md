@@ -71,8 +71,9 @@ Note the **connector id** in the output or in the Power Automate portal (**Data*
 Set the connector id, then run `update.sh` for the connector you are refreshing:
 
 ```bash
-export CONNECTOR_ID='shared_your-connector-id-here'
-# or add CONNECTOR_ID=... to a repo-root `.env` file
+export ORG_CONNECTOR_ID='shared_your-organization-connector-id-here'
+export ACCOUNT_CONNECTOR_ID='shared_your-account-connector-id-here'
+# or add ORG_CONNECTOR_ID / ACCOUNT_CONNECTOR_ID to a repo-root `.env` file
 ./docrouter/docrouter-org/update.sh
 # or
 ./docrouter/docrouter-account/update.sh
