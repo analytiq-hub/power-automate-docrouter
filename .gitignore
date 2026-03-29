@@ -195,10 +195,10 @@ cython_debug/
 .pypirc
 
 # paconn: optional local paths (use --settings)
-docrouter/docrouter-org/doc-router/settings.json
+docrouter/docrouter-org/settings.json
 
-# paconn: DocRouter connector download output (see docrouter/docrouter-org/doc-router/download.sh)
-docrouter/docrouter-org/doc-router/download/
+# paconn: DocRouter connector download output (see docrouter/docrouter-org/download.sh)
+docrouter/docrouter-org/download/
 
 # Cursor
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to

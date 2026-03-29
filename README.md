@@ -49,15 +49,15 @@ To clear stored credentials: `./logout.sh` (or `paconn logout`).
 ### 3. Create the connector (first time)
 
 ```bash
-./docrouter/docrouter-org/doc-router/create.sh
+./docrouter/docrouter-org/create.sh
 ```
 
 `paconn` registers the connector using:
 
-- `docrouter/docrouter-org/doc-router/apiDefinition.swagger.json`
-- `docrouter/docrouter-org/doc-router/apiProperties.json`
-- `docrouter/docrouter-org/doc-router/icon.png`
-- `docrouter/docrouter-org/doc-router/script.csx` (injects organization id into `/v0/orgs/...` paths)
+- `docrouter/docrouter-org/apiDefinition.swagger.json`
+- `docrouter/docrouter-org/apiProperties.json`
+- `docrouter/docrouter-org/icon.png`
+- `docrouter/docrouter-org/script.csx` (injects organization id into `/v0/orgs/...` paths)
 
 Note the **connector id** in the output or in the Power Automate portal (**Data** → **Custom connectors**). You need it for updates.
 
@@ -68,16 +68,16 @@ Set the connector id, then run `update.sh`:
 ```bash
 export CONNECTOR_ID='shared_your-connector-id-here'
 # or add CONNECTOR_ID=... to a repo-root `.env` file
-./docrouter/docrouter-org/doc-router/update.sh
+./docrouter/docrouter-org/update.sh
 ```
 
 You can also pass the id as the first argument:
 
 ```bash
-./docrouter/docrouter-org/doc-router/update.sh 'shared_your-connector-id-here'
+./docrouter/docrouter-org/update.sh 'shared_your-connector-id-here'
 ```
 
-Optional: use `docrouter/docrouter-org/doc-router/settings.json` with `paconn update --settings ...` if you rely on saved paths (see Microsoft’s `paconn` documentation).
+Optional: use `docrouter/docrouter-org/settings.json` with `paconn update --settings ...` if you rely on saved paths (see Microsoft’s `paconn` documentation).
 
 ### 5. Use the connector in a flow
 
@@ -97,7 +97,7 @@ You can also create or refresh a custom connector manually in [Power Automate](h
 
 ## Operations and parameters
 
-The tables below mirror the connector OpenAPI (`docrouter/docrouter-org/doc-router/apiDefinition.swagger.json`). Every HTTP operation lives under `/v0/orgs/{organization_id}/...`. The **`organization_id`** path segment is **not** filled in per action in the designer: it is injected from the **connection** (see `script.csx` and `apiProperties.json`). Query and path parameters marked **internal** or **advanced** in the spec may be hidden or collapsed in the UI.
+The tables below mirror the connector OpenAPI (`docrouter/docrouter-org/apiDefinition.swagger.json`). Every HTTP operation lives under `/v0/orgs/{organization_id}/...`. The **`organization_id`** path segment is **not** filled in per action in the designer: it is injected from the **connection** (see `script.csx` and `apiProperties.json`). Query and path parameters marked **internal** or **advanced** in the spec may be hidden or collapsed in the UI.
 
 In **Body** rows, a trailing `*` on a property name (for example `name*`) means **required** in the JSON body.
 
@@ -185,5 +185,5 @@ In **Body** rows, a trailing `*` on a property name (for example `name*`) means 
 
 ## Repository layout
 
-- `docrouter/docrouter-org/doc-router/` — connector artifacts (`apiDefinition.swagger.json`, `apiProperties.json`, `script.csx`, `create.sh`, `update.sh`, `validate.sh`, `download.sh`).
+- `docrouter/docrouter-org/` — connector artifacts (`apiDefinition.swagger.json`, `apiProperties.json`, `script.csx`, `create.sh`, `update.sh`, `validate.sh`, `download.sh`).
 - `CLAUDE.md` — detailed conventions for maintaining the connector and syncing with the DocRouter API.
