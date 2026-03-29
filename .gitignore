@@ -194,8 +194,11 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-# paconn: DocRouter connector download output (see independent-published-connectors/doc-router/download.sh)
-independent-published-connectors/doc-router/download/
+# paconn: optional local paths (use --settings)
+docrouter/docrouter-org/doc-router/settings.json
+
+# paconn: DocRouter connector download output (see docrouter/docrouter-org/doc-router/download.sh)
+docrouter/docrouter-org/doc-router/download/
 
 # Cursor
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains the **DocRouter Organization RC1** Microsoft Power Automate custom connector — an independent-publisher connector for DocRouter.ai **organization-scoped** APIs (`/v0/orgs/...`). A separate **DocRouter Account** connector is planned for account-level APIs.
+This repository contains Microsoft Power Automate custom connectors for DocRouter.ai. Connector sources live under **`docrouter/`**: **`docrouter-org/`** holds the **DocRouter Organization RC1** connector (organization-scoped APIs, `/v0/orgs/...`). **`docrouter-account/`** will hold the separate account-level connector when added.
 
 - **DocRouter source**: `../doc-router/` (FastAPI backend at `/fastapi`, docs at `../doc-router/docs/`)
 - **Connector reference examples**: `../PowerPlatformConnectors/` (official Microsoft repository)
@@ -15,15 +15,17 @@ This repository contains the **DocRouter Organization RC1** Microsoft Power Auto
 
 ```
 power-automate-docrouter/
-├── independent-published-connectors/
-│   └── doc-router/
-│       ├── apiDefinition.swagger.json   # OpenAPI 2.0 spec (primary artifact)
-│       ├── apiProperties.json           # Power Automate connector metadata & auth
-│       ├── script.csx                   # Injects connection org id into URL paths (all operations)
-│       ├── create.sh / update.sh        # paconn create / update (pass --script)
-│       ├── validate.sh                  # paconn validate (swagger)
-│       ├── download.sh                  # paconn download → ./download/ (gitignored)
-│       └── settings.json                # optional paconn --settings
+├── docrouter/
+│   ├── docrouter-org/                 # Organization-scoped connector (RC1)
+│   │   └── doc-router/
+│   │       ├── apiDefinition.swagger.json   # OpenAPI 2.0 spec (primary artifact)
+│   │       ├── apiProperties.json           # Power Automate connector metadata & auth
+│   │       ├── script.csx                   # Injects connection org id into URL paths (all operations)
+│   │       ├── create.sh / update.sh        # paconn create / update (pass --script)
+│   │       ├── validate.sh                  # paconn validate (swagger)
+│   │       ├── download.sh                  # paconn download → ./download/ (gitignored)
+│   │       └── settings.json                # optional paconn --settings (local; gitignored)
+│   └── docrouter-account/             # (planned) Account-scoped connector
 ├── external-connectors/               # scripts to try connectors from ../PowerPlatformConnectors
 ├── login.sh                           # paconn login
 ├── logout.sh                          # paconn logout
@@ -61,10 +63,10 @@ Connector metadata consumed by Power Automate portal:
 Deploy scripts using the `paconn` CLI (installed via `pip install paconn`):
 ```bash
 # First-time creation
-./independent-published-connectors/doc-router/create.sh
+./docrouter/docrouter-org/doc-router/create.sh
 
 # Update existing connector
-./independent-published-connectors/doc-router/update.sh <connector-id>
+./docrouter/docrouter-org/doc-router/update.sh <connector-id>
 ```
 
 ## Development Workflow
@@ -81,7 +83,7 @@ Use the Power Automate custom connector wizard (portal.azure.com or make.powerau
 
 Alternatively, validate OpenAPI 2.0 compliance with:
 ```bash
-npx swagger-parser validate independent-published-connectors/doc-router/apiDefinition.swagger.json
+npx swagger-parser validate docrouter/docrouter-org/doc-router/apiDefinition.swagger.json
 ```
 
 ### Syncing from DocRouter Source
@@ -93,7 +95,7 @@ When DocRouter adds new endpoints, update `apiDefinition.swagger.json` to match.
 ```bash
 python -c "import sys, json, yaml; json.dump(yaml.safe_load(sys.stdin), sys.stdout, indent=2)" \
   < ../doc-router/docs/docrouter_power_automate_connector.yaml \
-  > independent-published-connectors/doc-router/apiDefinition.swagger.json
+  > docrouter/docrouter-org/doc-router/apiDefinition.swagger.json
 ```
 
 ## Connector Design Conventions
