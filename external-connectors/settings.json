@@ -1,0 +1,10 @@
+{
+  "connectorId": "shared_bluesky-20social-5fc9fcdf16f7f19820-5f1baa3e9f03d7d93b",
+  "environment": "Default-6e22e1cf-bf95-4e01-9308-782741bfcd27",
+  "apiProperties": "/home/andrei/build/analytiq/power-automate-docrouter/../PowerPlatformConnectors/independent-publisher-connectors/Bluesky Social/apiProperties.json",
+  "apiDefinition": "/home/andrei/build/analytiq/power-automate-docrouter/../PowerPlatformConnectors/independent-publisher-connectors/Bluesky Social/apiDefinition.swagger.json",
+  "icon": null,
+  "powerAppsUrl": "https://api.powerapps.com",
+  "powerAppsApiVersion": "2016-11-01",
+  "script": "/home/andrei/build/analytiq/power-automate-docrouter/../PowerPlatformConnectors/independent-publisher-connectors/Bluesky Social/script.csx"
+}
