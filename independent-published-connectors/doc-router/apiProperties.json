@@ -1,0 +1,23 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "api_key": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "API Key",
+          "description": "Your DocRouter API key. Create one under Settings → Developer in the DocRouter app.",
+          "tooltip": "Provide your DocRouter API key",
+          "constraints": {
+            "tabIndex": 2,
+            "clearText": false,
+            "required": "true"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#2563EB",
+    "capabilities": [],
+    "publisher": "Analytiq Hub LLC",
+    "stackOwner": "DocRouter"
+  }
+}
