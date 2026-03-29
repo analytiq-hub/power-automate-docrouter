@@ -26,6 +26,7 @@ power-automate-docrouter/
 │       └── settings.json                # optional paconn --settings
 ├── external-connectors/               # scripts to try connectors from ../PowerPlatformConnectors
 ├── login.sh                           # paconn login
+├── logout.sh                          # paconn logout
 ├── requirements.txt                   # Python dep: paconn
 ├── README.md
 └── CLAUDE.md

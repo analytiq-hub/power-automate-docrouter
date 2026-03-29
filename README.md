@@ -44,6 +44,8 @@ From the repo root:
 
 Or: `paconn login` after activating the venv. Complete the browser/device login for the tenant where the connector should live.
 
+To clear stored credentials: `./logout.sh` (or `paconn logout`).
+
 ### 3. Create the connector (first time)
 
 ```bash
