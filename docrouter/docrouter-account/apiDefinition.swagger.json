@@ -50,6 +50,7 @@
   "definitions": {
     "OrganizationMember": {
       "type": "object",
+      "additionalProperties": true,
       "properties": {
         "user_id": {
           "type": "string"
@@ -62,6 +63,7 @@
     },
     "Organization": {
       "type": "object",
+      "additionalProperties": true,
       "properties": {
         "id": {
           "type": "string"
@@ -86,12 +88,6 @@
         },
         "ocr_catalog": {
           "type": "object"
-        },
-        "created_at": {
-          "type": "string"
-        },
-        "updated_at": {
-          "type": "string"
         }
       }
     },

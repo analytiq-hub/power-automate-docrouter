@@ -4,6 +4,7 @@ import json
 
 ORG_MEMBER = {
     "type": "object",
+    "additionalProperties": True,
     "properties": {
         "user_id": {"type": "string"},
         "role": {"type": "string", "description": "admin or user"},
@@ -14,6 +15,10 @@ DEFS = {
     "OrganizationMember": ORG_MEMBER,
     "Organization": {
         "type": "object",
+        # Do not declare created_at/updated_at: API returns ISO-like strings without a timezone
+        # suffix; Power Automate Test still expects "string date-time" vs "string undefined".
+        # additionalProperties allows those fields without strict typed validation.
+        "additionalProperties": True,
         "properties": {
             "id": {"type": "string"},
             "name": {"type": "string"},
@@ -22,9 +27,6 @@ DEFS = {
             "default_prompt_enabled": {"type": "boolean"},
             "ocr_config": {"type": "object"},
             "ocr_catalog": {"type": "object"},
-            # Plain string: Power Automate response validation often mismatches date-time format vs runtime.
-            "created_at": {"type": "string"},
-            "updated_at": {"type": "string"},
         },
     },
     "OrganizationCreate": {
