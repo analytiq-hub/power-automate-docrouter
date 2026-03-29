@@ -4,6 +4,10 @@
 //
 // Upload/Update declare metadata as a string in OpenAPI (Power Automate-friendly); this script parses
 // JSON object strings and replaces them with real JSON objects before the request reaches DocRouter.
+//
+// Upload Document (single file in the connector) is wrapped to the API batch shape { documents: [...] }
+// with name (from document_name). The API response is unwrapped to a single document object.
+using System.Net;
 using System.Text;
 using Newtonsoft.Json;
 
@@ -49,10 +53,18 @@ public class Script : ScriptBase
             return metadataError;
         }
 
+        var wrapError = await TryWrapSingleDocumentUploadAsync().ConfigureAwait(false);
+        if (wrapError != null)
+        {
+            return wrapError;
+        }
+
         RemoveConnectionOnlyHeaders();
 
-        return await this.Context.SendAsync(this.Context.Request, this.CancellationToken)
+        var response = await this.Context.SendAsync(this.Context.Request, this.CancellationToken)
             .ConfigureAwait(false);
+        await TryUnwrapUploadDocumentResponseAsync(response).ConfigureAwait(false);
+        return response;
     }
 
     private bool TryGetOrganizationIdFromConnection(out string organizationId)
@@ -258,6 +270,180 @@ public class Script : ScriptBase
 
         obj[name] = parsed;
         return true;
+    }
+
+    /// <summary>
+    /// Connector exposes POST body as a single DocumentUpload; DocRouter expects { documents: [ { name, content, ... } ] }.
+    /// If the body already contains "documents", it is passed through unchanged.
+    /// </summary>
+    private async Task<HttpResponseMessage> TryWrapSingleDocumentUploadAsync()
+    {
+        if (!string.Equals(this.Context.OperationId, "UploadDocument", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var method = this.Context.Request.Method;
+        if (method == null || !string.Equals(method.Method, "POST", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var uri = this.Context.Request.RequestUri;
+        if (uri == null)
+        {
+            return null;
+        }
+
+        var path = uri.AbsolutePath.TrimEnd('/');
+        if (!path.EndsWith("/documents", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var req = this.Context.Request;
+        if (req.Content == null)
+        {
+            return null;
+        }
+
+        var mediaType = req.Content.Headers.ContentType?.MediaType;
+        if (string.IsNullOrEmpty(mediaType) ||
+            mediaType.IndexOf("json", StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            return null;
+        }
+
+        string json;
+        try
+        {
+            json = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return BadRequest("Request body is required for Upload Document.");
+        }
+
+        JObject root;
+        try
+        {
+            root = JObject.Parse(json);
+        }
+        catch (JsonReaderException ex)
+        {
+            this.Context.Logger.LogError("Upload Document body is not valid JSON: {0}", ex.Message);
+            return BadRequest("Request body is not valid JSON.");
+        }
+
+        if (root["documents"] != null)
+        {
+            return null;
+        }
+
+        var nameTok = root["document_name"] ?? root["name"];
+        if (nameTok == null || nameTok.Type != JTokenType.String ||
+            string.IsNullOrWhiteSpace(nameTok.Value<string>()))
+        {
+            return BadRequest("File name is required (document_name).");
+        }
+
+        if (root["content"] == null || root["content"].Type == JTokenType.Null)
+        {
+            return BadRequest("File content is required (Base64 field content).");
+        }
+
+        var item = new JObject
+        {
+            ["name"] = nameTok,
+            ["content"] = root["content"]
+        };
+
+        if (root["tag_ids"] != null)
+        {
+            item["tag_ids"] = root["tag_ids"];
+        }
+
+        if (root["metadata"] != null)
+        {
+            item["metadata"] = root["metadata"];
+        }
+
+        var wrapped = new JObject { ["documents"] = new JArray(item) };
+        var newBody = wrapped.ToString(Newtonsoft.Json.Formatting.None);
+        req.Content = new StringContent(newBody, Encoding.UTF8, "application/json");
+        req.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        return null;
+    }
+
+    /// <summary>
+    /// API returns { documents: [ { ... } ] }; unwrap to a single object for Power Automate dynamic content.
+    /// </summary>
+    private async Task TryUnwrapUploadDocumentResponseAsync(HttpResponseMessage response)
+    {
+        if (!string.Equals(this.Context.OperationId, "UploadDocument", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        if (response == null || response.StatusCode != HttpStatusCode.OK || response.Content == null)
+        {
+            return;
+        }
+
+        var mediaType = response.Content.Headers.ContentType?.MediaType;
+        if (string.IsNullOrEmpty(mediaType) ||
+            mediaType.IndexOf("json", StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            return;
+        }
+
+        string json;
+        try
+        {
+            json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return;
+        }
+
+        JToken root;
+        try
+        {
+            root = JToken.Parse(json);
+        }
+        catch (JsonReaderException)
+        {
+            return;
+        }
+
+        if (!(root is JObject jobj))
+        {
+            return;
+        }
+
+        var docsToken = jobj["documents"];
+        if (!(docsToken is JArray arr) || arr.Count < 1)
+        {
+            return;
+        }
+
+        var first = arr[0];
+        var newJson = first.ToString(Newtonsoft.Json.Formatting.None);
+        var oldContent = response.Content;
+        response.Content = new StringContent(newJson, Encoding.UTF8, "application/json");
+        response.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        oldContent?.Dispose();
     }
 
     private static HttpResponseMessage BadRequest(string message)

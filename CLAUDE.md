@@ -53,7 +53,7 @@ Connector metadata consumed by Power Automate portal:
 - `stackOwner` — `DocRouter`
 
 ### `script.csx`
-- Implements `ScriptBase`: reads connection header `docrouter_organization_id`, rewrites `/v0/orgs/{segment}/` in `RequestUri`, strips that header, then `SendAsync`.
+- Implements `ScriptBase`: reads connection header `docrouter_organization_id`, rewrites `/v0/orgs/{segment}/` in `RequestUri`, coerces upload/update **metadata** JSON strings to objects, wraps **Upload Document** (single body) to the API batch shape `{ documents: [...] }` with `name` from `document_name`, unwraps the upload response to one document object, strips connection headers, then `SendAsync`.
 - Deploy with `paconn create` / `paconn update` using `--script` (see `create.sh` / `update.sh`).
 
 ### `create.sh` / `update.sh`
@@ -125,7 +125,7 @@ For parameters that reference DocRouter resources (tags, prompts, schemas), use 
 
 **Tags on upload / update:** `tag_ids` is an array of tag id strings. You can add **`x-ms-dynamic-list`** on items with **`ListTags`** (see Clockify / Zapier NLA) so the designer shows tag names and stores ids.
 
-**Metadata:** In OpenAPI, `metadata` is **`type: string`** (JSON object text) so Power Automate can save flows with expressions and SharePoint-built JSON. **`script.csx`** parses that string into a JSON **object** before the request reaches DocRouter (FastAPI still receives `Dict[str, str]`). Webhook **response** schemas keep `metadata` as `object` because the API returns structured JSON.
+**Metadata:** In OpenAPI, `metadata` is **`type: string`** (JSON object text) so Power Automate can save flows with expressions and composed JSON from any source. **`script.csx`** parses that string into a JSON **object** before the request reaches DocRouter (FastAPI still receives `Dict[str, str]`). Webhook **response** schemas keep `metadata` as `object` because the API returns structured JSON.
 
 ## DocRouter API Context
 

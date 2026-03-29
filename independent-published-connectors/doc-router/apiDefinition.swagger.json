@@ -143,13 +143,13 @@
         "document_name": {
           "type": "string",
           "x-ms-summary": "File Name",
-          "description": "Original file name including extension (e.g. invoice.pdf)."
+          "description": "Original file name including extension (e.g. invoice.pdf). Supply from a previous step that exposes a file name, or type it manually."
         },
         "content": {
           "type": "string",
           "format": "byte",
           "x-ms-summary": "File Content (Base64)",
-          "description": "Base64-encoded file content."
+          "description": "File bytes as Base64. Use the **file content** output from any connector that reads a file (cloud storage, HTTP, email attachments, etc.), or a data URL (`data:...;base64,...`)."
         },
         "tag_ids": {
           "type": "array",
@@ -162,23 +162,8 @@
         "metadata": {
           "type": "string",
           "x-ms-summary": "Metadata (JSON)",
-          "description": "Optional custom fields as a JSON object string: string keys and string values only, e.g. {\"InvoiceId\":\"123\",\"Source\":\"SharePoint\"}. Use expressions or Compose to build JSON; plain key=value text is not valid. Leave empty if unused.",
+          "description": "Optional custom fields as a JSON object string: string keys and string values only, e.g. {\"InvoiceId\":\"123\",\"Source\":\"CRM\"}. Use expressions or Compose to build JSON; plain key=value text is not valid. Leave empty if unused.",
           "x-ms-visibility": "advanced"
-        }
-      }
-    },
-    "DocumentsUpload": {
-      "type": "object",
-      "required": [
-        "documents"
-      ],
-      "properties": {
-        "documents": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/DocumentUpload"
-          },
-          "x-ms-summary": "Documents"
         }
       }
     },
@@ -206,9 +191,19 @@
     "Document": {
       "type": "object",
       "properties": {
+        "id": {
+          "type": "string",
+          "x-ms-summary": "Document ID",
+          "description": "Returned by Get Document. Use as **document_id** on subsequent actions."
+        },
         "document_id": {
           "type": "string",
-          "x-ms-summary": "Document ID"
+          "x-ms-summary": "Document ID (alias)",
+          "description": "Same identifier as **id** on some responses."
+        },
+        "pdf_id": {
+          "type": "string",
+          "x-ms-summary": "PDF ID"
         },
         "document_name": {
           "type": "string",
@@ -233,6 +228,26 @@
         "metadata": {
           "type": "object",
           "x-ms-summary": "Metadata"
+        },
+        "type": {
+          "type": "string",
+          "x-ms-summary": "MIME Type",
+          "description": "File MIME type when returned by Get Document."
+        },
+        "content": {
+          "type": "string",
+          "format": "byte",
+          "x-ms-summary": "File Content (Base64)",
+          "description": "Present when **Include File Content** is true. Map to any action that writes a file (cloud storage, HTTP, local gateway, etc.): use this field as file body and **document_name** as the target file name where applicable."
+        },
+        "upload_date": {
+          "type": "string",
+          "format": "date-time",
+          "x-ms-summary": "Upload Date"
+        },
+        "uploaded_by": {
+          "type": "string",
+          "x-ms-summary": "Uploaded By"
         },
         "created_at": {
           "type": "string",
@@ -939,12 +954,13 @@
         }
       },
       "post": {
-        "operationId": "UploadDocuments",
-        "summary": "Upload Documents",
-        "description": "Upload one or more documents. File content must be Base64-encoded. After upload, OCR and LLM processing are queued automatically.\n",
+        "operationId": "UploadDocument",
+        "summary": "Upload Document",
+        "description": "Upload a single document. The body is one file (file name + Base64 content), not an array—works with any upstream step that provides binary content as Base64. The connector forwards to the DocRouter API as a one-item batch. After upload, OCR and LLM processing are queued automatically.",
         "tags": [
           "Documents"
         ],
+        "x-ms-visibility": "important",
         "parameters": [
           {
             "$ref": "#/parameters/organization_id"
@@ -954,23 +970,15 @@
             "name": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/DocumentsUpload"
+              "$ref": "#/definitions/DocumentUpload"
             }
           }
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OK — returns the uploaded document record (same shape as a single List Documents item).",
             "schema": {
-              "type": "object",
-              "properties": {
-                "documents": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/Document"
-                  }
-                }
-              }
+              "$ref": "#/definitions/Document"
             }
           }
         }
@@ -1004,10 +1012,11 @@
       "get": {
         "operationId": "GetDocument",
         "summary": "Get Document",
-        "description": "Returns metadata and optionally the file content (Base64) for a single document.",
+        "description": "Returns metadata and optionally the file content (Base64) for a single document. Use **document_id** from **Upload Document** or **List Documents**. To persist the file elsewhere, pass **content** and **document_name** to any connector that creates or updates files (storage, HTTP, on-premises, etc.).",
         "tags": [
           "Documents"
         ],
+        "x-ms-visibility": "important",
         "parameters": [
           {
             "$ref": "#/parameters/organization_id"
