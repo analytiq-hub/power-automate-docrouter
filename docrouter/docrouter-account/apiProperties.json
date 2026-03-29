@@ -1,0 +1,37 @@
+{
+  "properties": {
+    "connectionParameters": {
+      "base_url": {
+        "type": "string",
+        "uiDefinition": {
+          "displayName": "Base URL (optional). Default: https://app.docrouter.ai/fastapi",
+          "description": "Base URL of your DocRouter instance. Leave blank to use the default (https://app.docrouter.ai/fastapi).",
+          "tooltip": "Optional. Default: https://app.docrouter.ai/fastapi",
+          "default": "https://app.docrouter.ai/fastapi",
+          "constraints": {
+            "tabIndex": 2,
+            "clearText": true,
+            "required": "false"
+          }
+        }
+      },
+      "api_key": {
+        "type": "securestring",
+        "uiDefinition": {
+          "displayName": "Account API token",
+          "description": "Account-level API token (prefix acc_). Create under Settings → Developer in DocRouter. This is not an organization-scoped token (org_...). Sent as the X-Api-Key header.",
+          "tooltip": "Use an account-level token; organization tokens cannot call /v0/account/ APIs.",
+          "constraints": {
+            "tabIndex": 3,
+            "clearText": false,
+            "required": "true"
+          }
+        }
+      }
+    },
+    "iconBrandColor": "#FFFFFF",
+    "capabilities": [],
+    "publisher": "Analytiq Hub LLC",
+    "stackOwner": "DocRouter"
+  }
+}

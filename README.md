@@ -1,6 +1,6 @@
 # power-automate-docrouter
 
-Microsoft Power Automate tooling for [DocRouter.ai](https://docrouter.ai): the **DocRouter Organization RC1** custom connector (organization-scoped HTTP API). A separate **DocRouter Account** connector may be added later.
+Microsoft Power Automate tooling for [DocRouter.ai](https://docrouter.ai): the **DocRouter Organization RC1** custom connector (organization-scoped HTTP API under `/v0/orgs/...`) and the **DocRouter Account** custom connector (account-scoped APIs under `/v0/account/...`: users, organizations, tokens, AWS and LLM configuration).
 
 ## Sandbox sample flow
 
@@ -46,40 +46,48 @@ Or: `paconn login` after activating the venv. Complete the browser/device login 
 
 To clear stored credentials: `./logout.sh` (or `paconn logout`).
 
-### 3. Create the connector (first time)
+### 3. Create a connector (first time)
+
+**Organization connector** (documents, prompts, org APIs):
 
 ```bash
 ./docrouter/docrouter-org/create.sh
 ```
 
-`paconn` registers the connector using:
+`paconn` registers the connector using `docrouter/docrouter-org/apiDefinition.swagger.json`, `apiProperties.json`, `icon.png`, and `script.csx` (injects organization id into `/v0/orgs/...` paths).
 
-- `docrouter/docrouter-org/apiDefinition.swagger.json`
-- `docrouter/docrouter-org/apiProperties.json`
-- `docrouter/docrouter-org/icon.png`
-- `docrouter/docrouter-org/script.csx` (injects organization id into `/v0/orgs/...` paths)
+**Account connector** (users, organizations, account tokens, AWS, LLM providers — no script):
+
+```bash
+./docrouter/docrouter-account/create.sh
+```
+
+Uses `docrouter/docrouter-account/apiDefinition.swagger.json`, `apiProperties.json`, and `icon.png` only.
 
 Note the **connector id** in the output or in the Power Automate portal (**Data** → **Custom connectors**). You need it for updates.
 
 ### 4. Update an existing connector
 
-Set the connector id, then run `update.sh`:
+Set the connector id, then run `update.sh` for the connector you are refreshing:
 
 ```bash
 export CONNECTOR_ID='shared_your-connector-id-here'
 # or add CONNECTOR_ID=... to a repo-root `.env` file
 ./docrouter/docrouter-org/update.sh
+# or
+./docrouter/docrouter-account/update.sh
 ```
 
 You can also pass the id as the first argument:
 
 ```bash
-./docrouter/docrouter-org/update.sh 'shared_your-connector-id-here'
+./docrouter/docrouter-org/update.sh 'shared_your-organization-connector-id'
+./docrouter/docrouter-account/update.sh 'shared_your-account-connector-id'
 ```
 
-Optional: use `docrouter/docrouter-org/settings.json` with `paconn update --settings ...` if you rely on saved paths (see Microsoft’s `paconn` documentation).
+Optional: use a per-connector `settings.json` under `docrouter/docrouter-org/` or `docrouter/docrouter-account/` with `paconn update --settings ...` if you rely on saved paths (see Microsoft’s `paconn` documentation).
 
-### 5. Use the connector in a flow
+### 5. Use the connectors in a flow
 
 In Power Automate, add an action from **DocRouter Organization RC1** and create a **connection** when prompted:
 
@@ -91,13 +99,24 @@ In Power Automate, add an action from **DocRouter Organization RC1** and create 
 
 After the connection succeeds, you can build flows such as the sandbox above or call **Get Document**, **List Documents**, tags, prompts, and the rest of the operations shown in the action list screenshot.
 
+#### DocRouter Account connection
+
+When you add an action from **DocRouter Account**, create a **connection** with:
+
+| Field | Purpose |
+|--------|--------|
+| **Base URL** | Optional. Default production API if blank (`https://app.docrouter.ai/fastapi`). |
+| **Account API token** | Account-level token (`acc_...`) from DocRouter **Settings → Developer**. Organization tokens (`org_...`) do not work for `/v0/account/` APIs. |
+
 ### Alternative: import in the portal
 
-You can also create or refresh a custom connector manually in [Power Automate](https://make.powerautomate.com) or the Power Platform portal by importing the same OpenAPI (`apiDefinition.swagger.json`), properties (`apiProperties.json`), icon, and C# script—`paconn` is the supported path for keeping this repo and the tenant in sync.
+You can also create or refresh a custom connector manually in [Power Automate](https://make.powerautomate.com) or the Power Platform portal by importing the same OpenAPI (`apiDefinition.swagger.json`), properties (`apiProperties.json`), icon, and (for the organization connector only) the C# script—`paconn` is the supported path for keeping this repo and the tenant in sync.
 
 ## Operations and parameters
 
-The tables below mirror the connector OpenAPI (`docrouter/docrouter-org/apiDefinition.swagger.json`). Every HTTP operation lives under `/v0/orgs/{organization_id}/...`. The **`organization_id`** path segment is **not** filled in per action in the designer: it is injected from the **connection** (see `script.csx` and `apiProperties.json`). Query and path parameters marked **internal** or **advanced** in the spec may be hidden or collapsed in the UI.
+### Organization connector
+
+The tables below mirror `docrouter/docrouter-org/apiDefinition.swagger.json`. Every HTTP operation lives under `/v0/orgs/{organization_id}/...`. The **`organization_id`** path segment is **not** filled in per action in the designer: it is injected from the **connection** (see `script.csx` and `apiProperties.json`). Query and path parameters marked **internal** or **advanced** in the spec may be hidden or collapsed in the UI.
 
 In **Body** rows, a trailing `*` on a property name (for example `name*`) means **required** in the JSON body.
 
@@ -183,7 +202,23 @@ In **Body** rows, a trailing `*` on a property name (for example `name*`) means 
 |---------|--------------|------|------------------------------------------|
 | When a DocRouter Event Occurs | `OnDocRouterEvent` | POST | **Body**: `callbackUrl`*; `events` (array) |
 
+### Account connector
+
+See `docrouter/docrouter-account/apiDefinition.swagger.json` for the full list. Summary:
+
+| Area | Operations (examples) |
+|------|------------------------|
+| Organizations | List, create, update, delete (`/v0/account/organizations`) |
+| Users | List, create, update, delete (`/v0/account/users`) |
+| API tokens | List, create, delete account tokens (`/v0/account/access_tokens`) |
+| AWS | Get, set, delete AWS config (`/v0/account/aws_config`) — system admin only |
+| LLM | List models, list providers, set provider config (`/v0/account/llm/...`) — admin for provider listing/config |
+| Utilities | Resolve token to organization (`ResolveTokenOrganization`) |
+
+Regenerate the OpenAPI from route summaries when the backend changes: `python3 docrouter/docrouter-account/generate_swagger.py`.
+
 ## Repository layout
 
-- `docrouter/docrouter-org/` — connector artifacts (`apiDefinition.swagger.json`, `apiProperties.json`, `script.csx`, `create.sh`, `update.sh`, `validate.sh`, `download.sh`).
-- `CLAUDE.md` — detailed conventions for maintaining the connector and syncing with the DocRouter API.
+- `docrouter/docrouter-org/` — organization connector (`apiDefinition.swagger.json`, `apiProperties.json`, `script.csx`, `create.sh`, `update.sh`, `validate.sh`, `download.sh`).
+- `docrouter/docrouter-account/` — account connector (same scripts except no `script.csx`; `generate_swagger.py` builds `apiDefinition.swagger.json`).
+- `CLAUDE.md` — detailed conventions for maintaining the connectors and syncing with the DocRouter API.

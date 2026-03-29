@@ -2,7 +2,7 @@
   "swagger": "2.0",
   "info": {
     "title": "DocRouter Organization",
-    "description": "DocRouter Organization: org-scoped API (paths under /v0/orgs/). Upload documents, OCR/LLM extraction, prompts, schemas, knowledge bases, webhooks. API key under Settings \u2192 Developer. (A separate DocRouter Account connector is planned for account-level APIs.)\n",
+    "description": "DocRouter Organization: org-scoped API (paths under /v0/orgs/). Upload documents, OCR/LLM extraction, prompts, schemas, knowledge bases, webhooks. Use an organization API token (org_...) under Settings \u2192 Developer. Account-level APIs (/v0/account/) use the separate DocRouter Account connector.\n",
     "version": "1.0",
     "contact": {
       "name": "DocRouter Support",

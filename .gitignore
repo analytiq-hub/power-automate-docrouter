@@ -200,6 +200,11 @@ docrouter/docrouter-org/settings.json
 # paconn: DocRouter connector download output (see docrouter/docrouter-org/download.sh)
 docrouter/docrouter-org/download/
 
+docrouter/docrouter-account/settings.json
+
+# paconn: DocRouter Account connector download output (see docrouter/docrouter-account/download.sh)
+docrouter/docrouter-account/download/
+
 # Cursor
 #  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
 #  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data

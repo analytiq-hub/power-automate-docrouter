@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains Microsoft Power Automate custom connectors for DocRouter.ai. Connector sources live under **`docrouter/`**: **`docrouter-org/`** holds the **DocRouter Organization RC1** connector (organization-scoped APIs, `/v0/orgs/...`). **`docrouter-account/`** will hold the separate account-level connector when added.
+This repository contains Microsoft Power Automate custom connectors for DocRouter.ai. Connector sources live under **`docrouter/`**: **`docrouter-org/`** is the **DocRouter Organization RC1** connector (organization-scoped APIs, `/v0/orgs/...`, C# script injects org id). **`docrouter-account/`** is the **DocRouter Account** connector (account-scoped APIs, `/v0/account/...`, no script; **account-level** API token `acc_...` via `X-Api-Key`).
 
 - **DocRouter source**: `../doc-router/` (FastAPI backend at `/fastapi`, docs at `../doc-router/docs/`)
 - **Connector reference examples**: `../PowerPlatformConnectors/` (official Microsoft repository)
@@ -24,7 +24,14 @@ power-automate-docrouter/
 │   │   ├── validate.sh                  # paconn validate (swagger)
 │   │   ├── download.sh                  # paconn download → ./download/ (gitignored)
 │   │   └── settings.json                # optional paconn --settings (local; gitignored)
-│   └── docrouter-account/             # (planned) Account-scoped connector
+│   └── docrouter-account/             # Account-scoped connector (/v0/account/)
+│       ├── apiDefinition.swagger.json   # OpenAPI 2.0 (regenerate via generate_swagger.py)
+│       ├── apiProperties.json           # base_url + Account API token (no org id)
+│       ├── generate_swagger.py          # helper to rebuild the OpenAPI from route inventory
+│       ├── create.sh / update.sh        # paconn create / update (no --script)
+│       ├── validate.sh
+│       ├── download.sh
+│       └── settings.json                # optional paconn --settings (local; gitignored)
 ├── external-connectors/               # scripts to try connectors from ../PowerPlatformConnectors
 ├── login.sh                           # paconn login
 ├── logout.sh                          # paconn logout
@@ -34,6 +41,11 @@ power-automate-docrouter/
 ```
 
 ## Key Files
+
+### Organization (`docrouter/docrouter-org/`) vs Account (`docrouter/docrouter-account/`)
+
+- **Org**: `connectionParameters` include **`docrouter_organization_id`** and **`api_key`** (org token `org_...`); **`policyTemplateInstances`** pass a header for the script; **`script.csx`** rewrites `/v0/orgs/...` and handles upload/metadata quirks.
+- **Account**: **`api_key`** only (plus optional **`base_url`**); **no** org id, **no** policy, **no** script — paths in OpenAPI are the real `/v0/account/...` routes. Backend auth resolves account vs org tokens by path (`get_api_context` in `../doc-router/.../auth.py`).
 
 ### `apiDefinition.swagger.json`
 The core connector artifact. Must conform to **OpenAPI 2.0** (not 3.x). Key constraints:
@@ -45,27 +57,31 @@ The core connector artifact. Must conform to **OpenAPI 2.0** (not 3.x). Key cons
 - Response schemas must be fully inlined (no `$ref` to external files)
 
 ### `apiProperties.json`
-Connector metadata consumed by Power Automate portal:
-- `connectionParameters.api_key` — securestring; UI label **Organization Token** (still the same credential; sent as `X-Api-Key`)
-- `connectionParameters.docrouter_organization_id` — organization ID once per connection (see `script.csx`)
+Connector metadata consumed by Power Automate portal (org connector shown; account omits org id and policies):
+- `connectionParameters.api_key` — securestring; org UI label **Organization Token**; account UI label **Account API token** (`acc_...`)
+- `connectionParameters.docrouter_organization_id` — **organization** connector only; once per connection (see `script.csx`)
 - `connectionParameters.base_url` — optional; default `https://app.docrouter.ai/fastapi` when left blank
-- `scriptOperations` — `[]` means the C# script runs for **all** operations
+- `policyTemplateInstances` / `scriptOperations` — **organization** connector only (`scriptOperations`: `[]` runs the script for all operations)
 - `iconBrandColor` — `#FFFFFF` (white tile; if the logo looks faint or garbled in the portal, increase icon/background contrast or adjust the asset)
 - `publisher` — `Analytiq Hub LLC`
 - `stackOwner` — `DocRouter`
 
-### `script.csx`
+### `script.csx` (organization connector only)
 - Implements `ScriptBase`: reads connection header `docrouter_organization_id`, rewrites `/v0/orgs/{segment}/` in `RequestUri`, coerces upload/update **metadata** JSON strings to objects, wraps **Upload Document** (single body) to the API batch shape `{ documents: [...] }` with `name` from `document_name`, unwraps the upload response to one document object, strips connection headers, then `SendAsync`.
-- Deploy with `paconn create` / `paconn update` using `--script` (see `create.sh` / `update.sh`).
+- Deploy with `paconn create` / `paconn update` using `--script` (see `docrouter/docrouter-org/create.sh` / `update.sh`).
 
 ### `create.sh` / `update.sh`
 Deploy scripts using the `paconn` CLI (installed via `pip install paconn`):
 ```bash
-# First-time creation
+# Organization connector (first-time)
 ./docrouter/docrouter-org/create.sh
+
+# Account connector (first-time; no --script)
+./docrouter/docrouter-account/create.sh
 
 # Update existing connector
 ./docrouter/docrouter-org/update.sh <connector-id>
+./docrouter/docrouter-account/update.sh <connector-id>
 ```
 
 ## Development Workflow
@@ -83,18 +99,24 @@ Use the Power Automate custom connector wizard (portal.azure.com or make.powerau
 Alternatively, validate OpenAPI 2.0 compliance with:
 ```bash
 npx swagger-parser validate docrouter/docrouter-org/apiDefinition.swagger.json
+npx swagger-parser validate docrouter/docrouter-account/apiDefinition.swagger.json
 ```
 
 ### Syncing from DocRouter Source
-The upstream source of truth for the API spec is:
+The upstream source of truth for the **organization** API spec is:
 - `../doc-router/docs/docrouter_power_automate_connector.yaml` — YAML version of the spec
 - `../doc-router/packages/python/app/` — FastAPI route definitions
 
-When DocRouter adds new endpoints, update `apiDefinition.swagger.json` to match. Convert the YAML spec to JSON if needed:
+When DocRouter adds new endpoints, update `docrouter/docrouter-org/apiDefinition.swagger.json` to match. Convert the YAML spec to JSON if needed:
 ```bash
 python -c "import sys, json, yaml; json.dump(yaml.safe_load(sys.stdin), sys.stdout, indent=2)" \
   < ../doc-router/docs/docrouter_power_automate_connector.yaml \
   > docrouter/docrouter-org/apiDefinition.swagger.json
+```
+
+For the **account** connector, routes live under `/v0/account/` in `../doc-router/packages/python/app/routes/` (e.g. `orgs.py`, `users.py`, `token.py`, `aws.py`, `llm.py`). After backend changes, edit `docrouter/docrouter-account/generate_swagger.py` and run:
+```bash
+python3 docrouter/docrouter-account/generate_swagger.py
 ```
 
 ## Connector Design Conventions
