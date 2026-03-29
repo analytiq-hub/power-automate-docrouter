@@ -160,8 +160,9 @@
           "x-ms-visibility": "advanced"
         },
         "metadata": {
-          "type": "object",
-          "x-ms-summary": "Metadata",
+          "type": "string",
+          "x-ms-summary": "Metadata (JSON)",
+          "description": "Optional custom fields as a JSON object string: string keys and string values only, e.g. {\"InvoiceId\":\"123\",\"Source\":\"SharePoint\"}. Use expressions or Compose to build JSON; plain key=value text is not valid. Leave empty if unused.",
           "x-ms-visibility": "advanced"
         }
       }
@@ -196,8 +197,9 @@
           "x-ms-summary": "Tag IDs"
         },
         "metadata": {
-          "type": "object",
-          "x-ms-summary": "Metadata"
+          "type": "string",
+          "x-ms-summary": "Metadata (JSON)",
+          "description": "Optional custom fields as a JSON object string (same format as upload). Leave empty if unused."
         }
       }
     },

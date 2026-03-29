@@ -1,6 +1,12 @@
 // Injects the organization ID from the connection into every request path (/v0/orgs/{organization_id}/...).
 // Connection parameter docrouter_organization_id is available as a request header (same pattern as
 // microsoft/PowerPlatformConnectors certified connectors — e.g. QPP NextGen, Zoho Invoice Basic).
+//
+// Upload/Update declare metadata as a string in OpenAPI (Power Automate-friendly); this script parses
+// JSON object strings and replaces them with real JSON objects before the request reaches DocRouter.
+using System.Text;
+using Newtonsoft.Json;
+
 public class Script : ScriptBase
 {
     // Policy setheader + runtime may use these names; try in order (see apiProperties policyTemplateInstances).
@@ -35,6 +41,12 @@ public class Script : ScriptBase
             this.Context.Logger.LogError("Path rewrite failed: {0}", errorMessage ?? "(unknown)");
             return BadRequest(
                 "Could not apply organization to the request URL. " + (errorMessage ?? "Unknown error."));
+        }
+
+        var metadataError = await TryCoerceMetadataJsonStringsAsync().ConfigureAwait(false);
+        if (metadataError != null)
+        {
+            return metadataError;
         }
 
         RemoveConnectionOnlyHeaders();
@@ -117,6 +129,135 @@ public class Script : ScriptBase
                 this.Context.Request.Headers.Remove(headerName);
             }
         }
+    }
+
+    /// <summary>
+    /// OpenAPI exposes metadata as string for Power Automate; DocRouter expects a JSON object.
+    /// Coerces string values to objects; leaves existing JSON objects unchanged.
+    /// </summary>
+    private async Task<HttpResponseMessage> TryCoerceMetadataJsonStringsAsync()
+    {
+        var req = this.Context.Request;
+        if (req?.Content == null)
+        {
+            return null;
+        }
+
+        var mediaType = req.Content.Headers.ContentType?.MediaType;
+        if (string.IsNullOrEmpty(mediaType) ||
+            mediaType.IndexOf("json", StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            return null;
+        }
+
+        string json;
+        try
+        {
+            json = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return null;
+        }
+
+        JToken root;
+        try
+        {
+            root = JToken.Parse(json);
+        }
+        catch (JsonReaderException ex)
+        {
+            this.Context.Logger.LogError("Request body is not valid JSON: {0}", ex.Message);
+            return BadRequest("Request body is not valid JSON.");
+        }
+
+        if (!TryCoerceMetadataStringsInToken(root, out var coerceError))
+        {
+            return BadRequest(coerceError);
+        }
+
+        var newBody = root.ToString(Newtonsoft.Json.Formatting.None);
+        req.Content = new StringContent(newBody, Encoding.UTF8, "application/json");
+        req.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        return null;
+    }
+
+    private bool TryCoerceMetadataStringsInToken(JToken root, out string errorMessage)
+    {
+        errorMessage = null;
+        if (!(root is JObject jobj))
+        {
+            return true;
+        }
+
+        if (jobj["documents"] is JArray docs)
+        {
+            foreach (var item in docs)
+            {
+                if (item is JObject doc && !TryCoerceMetadataProperty(doc, "metadata", out errorMessage))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return TryCoerceMetadataProperty(jobj, "metadata", out errorMessage);
+    }
+
+    private static bool TryCoerceMetadataProperty(JObject obj, string name, out string errorMessage)
+    {
+        errorMessage = null;
+        var tok = obj[name];
+        if (tok == null || tok.Type == JTokenType.Null)
+        {
+            return true;
+        }
+
+        if (tok.Type == JTokenType.Object)
+        {
+            return true;
+        }
+
+        if (tok.Type != JTokenType.String)
+        {
+            errorMessage =
+                "Metadata must be a JSON object, or a string containing a JSON object (e.g. {\"key\":\"value\"}).";
+            return false;
+        }
+
+        var s = tok.Value<string>();
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            obj.Remove(name);
+            return true;
+        }
+
+        JToken parsed;
+        try
+        {
+            parsed = JToken.Parse(s);
+        }
+        catch (JsonReaderException)
+        {
+            errorMessage =
+                "Metadata must be valid JSON object syntax, e.g. {\"invoice_id\":\"123\"}. Plain text like foo=bar is not valid.";
+            return false;
+        }
+
+        if (parsed.Type != JTokenType.Object)
+        {
+            errorMessage =
+                "Metadata must decode to a JSON object with string keys and string values, not an array or primitive.";
+            return false;
+        }
+
+        obj[name] = parsed;
+        return true;
     }
 
     private static HttpResponseMessage BadRequest(string message)

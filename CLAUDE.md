@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains the **DocRouter Organization** Microsoft Power Automate custom connector — an independent-publisher connector for DocRouter.ai **organization-scoped** APIs (`/v0/orgs/...`). A separate **DocRouter Account** connector is planned for account-level APIs.
+This repository contains the **DocRouter Organization RC1** Microsoft Power Automate custom connector — an independent-publisher connector for DocRouter.ai **organization-scoped** APIs (`/v0/orgs/...`). A separate **DocRouter Account** connector is planned for account-level APIs.
 
 - **DocRouter source**: `../doc-router/` (FastAPI backend at `/fastapi`, docs at `../doc-router/docs/`)
 - **Connector reference examples**: `../PowerPlatformConnectors/` (official Microsoft repository)
@@ -48,7 +48,7 @@ Connector metadata consumed by Power Automate portal:
 - `connectionParameters.docrouter_organization_id` — organization ID once per connection (see `script.csx`)
 - `connectionParameters.base_url` — optional; default `https://app.docrouter.ai/fastapi` when left blank
 - `scriptOperations` — `[]` means the C# script runs for **all** operations
-- `iconBrandColor` — `#FFFFFF` (white tile background; adjust if icon contrast suffers)
+- `iconBrandColor` — `#FFFFFF` (white tile; if the logo looks faint or garbled in the portal, increase icon/background contrast or adjust the asset)
 - `publisher` — `Analytiq Hub LLC`
 - `stackOwner` — `DocRouter`
 
@@ -105,37 +105,27 @@ Follow patterns from `../PowerPlatformConnectors/independent-publisher-connector
 - Paginated list responses include `nextLink` or cursor fields
 - Webhook operations (if any) use `x-ms-trigger: single` or `batch`
 
-### Path Parameters (organization_id, etc.)
+### Organization path segment (no OpenAPI path parameter)
 
-The shared **`organization_id`** path segment is **`x-ms-visibility: internal`** in the OpenAPI spec—the user sets **`docrouter_organization_id` once on the connection**; `script.csx` injects it into the URL for every call. **Do not** reuse the connection parameter name `organization_id` for the same path placeholder (that name collision caused `orgs/undefined/...` in the runtime).
+Paths use a fixed literal segment **`/v0/orgs/from-connection/`** instead of `{organization_id}`. That keeps **Test** and flow actions from showing an `organization_id` field. **`script.csx`** replaces `from-connection` with the real org id from **`docrouter_organization_id`** (via policy header) on every request. **Do not** name a connection parameter `organization_id`—it collided with the old path placeholder and produced `orgs/undefined/...`.
 
 Optional portal-only **`policyTemplateInstances`** (e.g. set header from `@connectionParameters(...)`) are not represented in `paconn` deploys the same way in all environments—see Microsoft’s `PowerPlatformConnectors` samples (e.g. Zoho Invoice Basic) if you add policies manually.
 
-### Dynamic Dropdowns with `x-ms-dynamic-values`
+### Dynamic Dropdowns with `x-ms-dynamic-values` / `x-ms-dynamic-list`
 
-For parameters that reference DocRouter resources (tags, prompts, schemas), use `x-ms-dynamic-values` to populate a dropdown from a list operation instead of requiring users to type IDs. Example pattern (see Clockify connector at `../PowerPlatformConnectors/independent-publisher-connectors/Clockify/`):
+For parameters that reference DocRouter resources (tags, prompts, schemas), use **`x-ms-dynamic-values`** (single select) or **`x-ms-dynamic-list`** (arrays such as `tag_ids` on upload) with **`ListTags`**, **`ListPrompts`**, etc. Pass the org using **`connectionParameters.docrouter_organization_id`** when the operation does not expose `organization_id` as a visible parameter:
 
 ```json
-{
-  "name": "prompt_id",
-  "in": "path",
-  "required": true,
-  "type": "string",
-  "x-ms-summary": "Prompt",
-  "x-ms-dynamic-values": {
-    "operationId": "ListPrompts",
-    "value-path": "id",
-    "value-title": "name",
-    "parameters": {
-      "organization_id": {
-        "parameter": "organization_id"
-      }
-    }
+"parameters": {
+  "organization_id": {
+    "parameterReference": "connectionParameters.docrouter_organization_id"
   }
 }
 ```
 
-Apply this pattern when adding parameters for: tags (use `ListTags`), prompts (use `ListPrompts`), schemas (use `ListSchemas`), LLM models (use `ListOrgLLMModels`).
+**Tags on upload / update:** `tag_ids` is an array of tag id strings. You can add **`x-ms-dynamic-list`** on items with **`ListTags`** (see Clockify / Zapier NLA) so the designer shows tag names and stores ids.
+
+**Metadata:** In OpenAPI, `metadata` is **`type: string`** (JSON object text) so Power Automate can save flows with expressions and SharePoint-built JSON. **`script.csx`** parses that string into a JSON **object** before the request reaches DocRouter (FastAPI still receives `Dict[str, str]`). Webhook **response** schemas keep `metadata` as `object` because the API returns structured JSON.
 
 ## DocRouter API Context
 
