@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "Doc Router Organization",
-    "description": "Smart Document Router \u2014 upload documents, run OCR and LLM extraction, manage prompts/schemas/knowledge-bases, and configure webhooks. Use Bearer token authentication (create a token under Settings \u2192 Developer).\n",
+    "title": "DocRouter Organization",
+    "description": "DocRouter Organization: org-scoped API (paths under /v0/orgs/). Upload documents, OCR/LLM extraction, prompts, schemas, knowledge bases, webhooks. API key under Settings \u2192 Developer. (A separate DocRouter Account connector is planned for account-level APIs.)\n",
     "version": "1.0",
     "contact": {
       "name": "DocRouter Support",
@@ -53,8 +53,10 @@
       "in": "path",
       "required": true,
       "type": "string",
+      "default": "-",
       "x-ms-summary": "Organization ID",
-      "description": "The unique identifier of your DocRouter organization.",
+      "description": "Placeholder; the connection Organization ID is injected by the connector script. Do not set manually.",
+      "x-ms-visibility": "internal",
       "x-ms-url-encoding": "single"
     },
     "document_id": {

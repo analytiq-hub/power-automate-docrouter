@@ -14,12 +14,12 @@
           }
         }
       },
-      "organization_id": {
+      "docrouter_organization_id": {
         "type": "string",
         "uiDefinition": {
           "displayName": "Organization ID",
-          "description": "Your DocRouter organization ID. Find it in the DocRouter app under Settings → Organization.",
-          "tooltip": "Provide your DocRouter organization ID",
+          "description": "Your DocRouter organization ID (used for all actions on this connection). In the DocRouter web app, open the URL in your browser: it looks like https://app.docrouter.ai/orgs/{organization_id}/... — copy the segment after /orgs/ (for example, 679c9a914cfaaaa3640811ed). You can also find it under Settings → Organization.",
+          "tooltip": "Copy the ID from the path after /orgs/ in your DocRouter URL (e.g. https://app.docrouter.ai/orgs/679c9a914cfaaaa3640811ed/docs)",
           "constraints": {
             "tabIndex": 3,
             "clearText": false,
@@ -30,20 +30,33 @@
       "base_url": {
         "type": "string",
         "uiDefinition": {
-          "displayName": "Base URL, default: https://app.docrouter.ai/fastapi",
-          "description": "Base URL of your DocRouter instance. Default: https://app.docrouter.ai/fastapi",
-          "tooltip": "Provide the base URL of your DocRouter instance. Default: https://app.docrouter.ai/fastapi",
+          "displayName": "Base URL (optional)",
+          "description": "Base URL of your DocRouter instance. Leave blank to use the default (https://app.docrouter.ai/fastapi).",
+          "tooltip": "Optional. Default: https://app.docrouter.ai/fastapi",
           "default": "https://app.docrouter.ai/fastapi",
           "constraints": {
             "tabIndex": 4,
             "clearText": true,
-            "required": "true"
+            "required": "false"
           }
         }
       }
     },
+    "scriptOperations": [],
     "iconBrandColor": "#FFFFFF",
     "capabilities": [],
+    "policyTemplateInstances": [
+      {
+        "templateId": "setheader",
+        "title": "Pass organization id to script",
+        "parameters": {
+          "x-ms-apimTemplateParameter.name": "docrouter_organization_id",
+          "x-ms-apimTemplateParameter.value": "@connectionParameters('docrouter_organization_id')",
+          "x-ms-apimTemplateParameter.existsAction": "override",
+          "x-ms-apimTemplate-policySection": "Request"
+        }
+      }
+    ],
     "publisher": "Analytiq Hub LLC",
     "stackOwner": "DocRouter"
   }

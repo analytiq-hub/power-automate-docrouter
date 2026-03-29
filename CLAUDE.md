@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This repository contains the **DocRouter Microsoft Power Automate custom connector** — an independent-publisher connector that exposes the DocRouter.ai REST API to Microsoft Power Automate workflows.
+This repository contains the **DocRouter Organization** Microsoft Power Automate custom connector — an independent-publisher connector for DocRouter.ai **organization-scoped** APIs (`/v0/orgs/...`). A separate **DocRouter Account** connector is planned for account-level APIs.
 
 - **DocRouter source**: `../doc-router/` (FastAPI backend at `/fastapi`, docs at `../doc-router/docs/`)
 - **Connector reference examples**: `../PowerPlatformConnectors/` (official Microsoft repository)
@@ -19,9 +19,14 @@ power-automate-docrouter/
 │   └── doc-router/
 │       ├── apiDefinition.swagger.json   # OpenAPI 2.0 spec (primary artifact)
 │       ├── apiProperties.json           # Power Automate connector metadata & auth
-│       ├── create.sh                    # paconn create (first deploy)
-│       └── update.sh                   # paconn update <connector-id>
-├── requirements.txt                     # Python dep: paconn
+│       ├── script.csx                   # Injects connection org id into URL paths (all operations)
+│       ├── create.sh / update.sh        # paconn create / update (pass --script)
+│       ├── validate.sh                  # paconn validate (swagger)
+│       ├── download.sh                  # paconn download → ./download/ (gitignored)
+│       └── settings.json                # optional paconn --settings
+├── external-connectors/               # scripts to try connectors from ../PowerPlatformConnectors
+├── login.sh                           # paconn login
+├── requirements.txt                   # Python dep: paconn
 ├── README.md
 └── CLAUDE.md
 ```
@@ -31,7 +36,7 @@ power-automate-docrouter/
 ### `apiDefinition.swagger.json`
 The core connector artifact. Must conform to **OpenAPI 2.0** (not 3.x). Key constraints:
 - `"swagger": "2.0"` — Power Automate requires Swagger 2.0
-- Uses `x-ms-parameterized-host` to support both cloud (`app.docrouter.ai`) and on-premises deployments
+- Uses fixed `host` / `basePath` in the spec; connection **`base_url`** in `apiProperties.json` is for the connector connection UI (on‑prem / custom host is typically wired via connector host settings or policies in the portal—not `x-ms-parameterized-host` in the current checked-in spec)
 - Auth: API key via `X-Api-Key` header (`securityDefinitions.api_key`)
 - All operations must have `operationId`, `x-ms-summary`, and `description`
 - Parameters must include `x-ms-summary` for UI display labels
@@ -40,9 +45,16 @@ The core connector artifact. Must conform to **OpenAPI 2.0** (not 3.x). Key cons
 ### `apiProperties.json`
 Connector metadata consumed by Power Automate portal:
 - `connectionParameters.api_key` — securestring for the API key UI prompt
-- `iconBrandColor` — `#2563EB` (DocRouter blue)
+- `connectionParameters.docrouter_organization_id` — organization ID once per connection (see `script.csx`)
+- `connectionParameters.base_url` — optional; default `https://app.docrouter.ai/fastapi` when left blank
+- `scriptOperations` — `[]` means the C# script runs for **all** operations
+- `iconBrandColor` — `#FFFFFF` (white tile background; adjust if icon contrast suffers)
 - `publisher` — `Analytiq Hub LLC`
 - `stackOwner` — `DocRouter`
+
+### `script.csx`
+- Implements `ScriptBase`: reads connection header `docrouter_organization_id`, rewrites `/v0/orgs/{segment}/` in `RequestUri`, strips that header, then `SendAsync`.
+- Deploy with `paconn create` / `paconn update` using `--script` (see `create.sh` / `update.sh`).
 
 ### `create.sh` / `update.sh`
 Deploy scripts using the `paconn` CLI (installed via `pip install paconn`):
@@ -95,7 +107,9 @@ Follow patterns from `../PowerPlatformConnectors/independent-publisher-connector
 
 ### Path Parameters (organization_id, etc.)
 
-Path parameters like `organization_id` must be **visible and user-supplied** — not internal. No independent-publisher connector uses internal path parameters populated from connection-level parameters (that pattern requires `policyTemplateInstances` which `paconn` silently ignores).
+The shared **`organization_id`** path segment is **`x-ms-visibility: internal`** in the OpenAPI spec—the user sets **`docrouter_organization_id` once on the connection**; `script.csx` injects it into the URL for every call. **Do not** reuse the connection parameter name `organization_id` for the same path placeholder (that name collision caused `orgs/undefined/...` in the runtime).
+
+Optional portal-only **`policyTemplateInstances`** (e.g. set header from `@connectionParameters(...)`) are not represented in `paconn` deploys the same way in all environments—see Microsoft’s `PowerPlatformConnectors` samples (e.g. Zoho Invoice Basic) if you add policies manually.
 
 ### Dynamic Dropdowns with `x-ms-dynamic-values`
 

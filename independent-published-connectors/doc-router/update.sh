@@ -22,4 +22,5 @@ paconn update \
   --api-def "$SCRIPT_DIR/apiDefinition.swagger.json" \
   --api-prop "$SCRIPT_DIR/apiProperties.json" \
   --icon "$SCRIPT_DIR/icon.png" \
+  --script "$SCRIPT_DIR/script.csx" \
   --cid "$CONNECTOR_ID"
