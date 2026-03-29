@@ -21,4 +21,4 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 paconn update \
   --api-def "$SCRIPT_DIR/apiDefinition.swagger.json" \
   --api-prop "$SCRIPT_DIR/apiProperties.json" \
-  --connector-id "$CONNECTOR_ID"
+  --cid "$CONNECTOR_ID"
