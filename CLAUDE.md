@@ -44,7 +44,7 @@ The core connector artifact. Must conform to **OpenAPI 2.0** (not 3.x). Key cons
 
 ### `apiProperties.json`
 Connector metadata consumed by Power Automate portal:
-- `connectionParameters.api_key` — securestring for the API key UI prompt
+- `connectionParameters.api_key` — securestring; UI label **Organization Token** (still the same credential; sent as `X-Api-Key`)
 - `connectionParameters.docrouter_organization_id` — organization ID once per connection (see `script.csx`)
 - `connectionParameters.base_url` — optional; default `https://app.docrouter.ai/fastapi` when left blank
 - `scriptOperations` — `[]` means the C# script runs for **all** operations

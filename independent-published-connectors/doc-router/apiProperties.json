@@ -31,9 +31,9 @@
       "api_key": {
         "type": "securestring",
         "uiDefinition": {
-          "displayName": "API Key",
-          "description": "Your DocRouter API key. Create one under Settings → Developer in the DocRouter app.",
-          "tooltip": "Provide your DocRouter API key",
+          "displayName": "Organization Token",
+          "description": "Your organization token for API access. Create one under Settings → Developer in the DocRouter app. (Sent as the X-Api-Key header.)",
+          "tooltip": "Paste your organization token (treated as a secret in this form)",
           "constraints": {
             "tabIndex": 4,
             "clearText": false,
