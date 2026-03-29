@@ -179,7 +179,6 @@ In **Body** rows, a trailing `*` on a property name (for example `name*`) means 
 
 | Summary | Operation ID | HTTP | Parameters (excluding `organization_id`) |
 |---------|--------------|------|------------------------------------------|
-| Unsubscribe from DocRouter Events | `DeleteDocRouterEventSubscription` | DELETE | `subscription_id` (path, string, req) |
 | When a DocRouter Event Occurs | `OnDocRouterEvent` | POST | **Body**: `callbackUrl`*; `events` (array) |
 
 ## Repository layout

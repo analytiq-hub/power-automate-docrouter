@@ -2348,33 +2348,6 @@
           }
         }
       }
-    },
-    "/v0/orgs/{organization_id}/webhook/subscriptions/{subscription_id}": {
-      "delete": {
-        "operationId": "DeleteDocRouterEventSubscription",
-        "summary": "Unsubscribe from DocRouter Events",
-        "description": "Deregisters the flow's callback URL. Called automatically by the connector runtime when the flow is turned off or deleted.\n",
-        "tags": [
-          "Triggers"
-        ],
-        "x-ms-visibility": "advanced",
-        "parameters": [
-          {
-            "$ref": "#/parameters/organization_id"
-          },
-          {
-            "$ref": "#/parameters/subscription_id"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Subscription deleted.",
-            "schema": {
-              "$ref": "#/definitions/OkResponse"
-            }
-          }
-        }
-      }
     }
   }
 }
