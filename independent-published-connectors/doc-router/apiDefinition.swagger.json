@@ -888,14 +888,7 @@
         ],
         "parameters": [
           {
-            "name": "organization_id",
-            "in": "path",
-            "required": true,
-            "type": "string",
-            "x-ms-summary": "Organization ID",
-            "description": "The unique identifier of your DocRouter organization.",
-            "x-ms-url-encoding": "single",
-            "x-ms-visibility": "internal"
+            "$ref": "#/parameters/organization_id"
           },
           {
             "name": "skip",

@@ -93,6 +93,36 @@ Follow patterns from `../PowerPlatformConnectors/independent-publisher-connector
 - Paginated list responses include `nextLink` or cursor fields
 - Webhook operations (if any) use `x-ms-trigger: single` or `batch`
 
+### Path Parameters (organization_id, etc.)
+
+Path parameters like `organization_id` must be **visible and user-supplied** — not internal. No independent-publisher connector uses internal path parameters populated from connection-level parameters (that pattern requires `policyTemplateInstances` which `paconn` silently ignores).
+
+### Dynamic Dropdowns with `x-ms-dynamic-values`
+
+For parameters that reference DocRouter resources (tags, prompts, schemas), use `x-ms-dynamic-values` to populate a dropdown from a list operation instead of requiring users to type IDs. Example pattern (see Clockify connector at `../PowerPlatformConnectors/independent-publisher-connectors/Clockify/`):
+
+```json
+{
+  "name": "prompt_id",
+  "in": "path",
+  "required": true,
+  "type": "string",
+  "x-ms-summary": "Prompt",
+  "x-ms-dynamic-values": {
+    "operationId": "ListPrompts",
+    "value-path": "id",
+    "value-title": "name",
+    "parameters": {
+      "organization_id": {
+        "parameter": "organization_id"
+      }
+    }
+  }
+}
+```
+
+Apply this pattern when adding parameters for: tags (use `ListTags`), prompts (use `ListPrompts`), schemas (use `ListSchemas`), LLM models (use `ListOrgLLMModels`).
+
 ## DocRouter API Context
 
 The DocRouter FastAPI backend (`../doc-router`) exposes endpoints under `/fastapi`. Key resource groups:
