@@ -242,7 +242,6 @@
         },
         "upload_date": {
           "type": "string",
-          "format": "date-time",
           "x-ms-summary": "Upload Date"
         },
         "uploaded_by": {
@@ -251,12 +250,10 @@
         },
         "created_at": {
           "type": "string",
-          "format": "date-time",
           "x-ms-summary": "Created At"
         },
         "updated_at": {
           "type": "string",
-          "format": "date-time",
           "x-ms-summary": "Updated At"
         }
       }
@@ -299,7 +296,6 @@
         },
         "ocr_date": {
           "type": "string",
-          "format": "date-time",
           "x-ms-summary": "OCR Date"
         }
       }
@@ -338,12 +334,10 @@
         },
         "created_at": {
           "type": "string",
-          "format": "date-time",
           "x-ms-summary": "Created At"
         },
         "updated_at": {
           "type": "string",
-          "format": "date-time",
           "x-ms-summary": "Updated At"
         }
       }
@@ -443,7 +437,6 @@
         },
         "created_at": {
           "type": "string",
-          "format": "date-time",
           "x-ms-summary": "Created At"
         }
       }
@@ -566,7 +559,6 @@
         },
         "created_at": {
           "type": "string",
-          "format": "date-time",
           "x-ms-summary": "Created At"
         }
       }
@@ -666,7 +658,6 @@
         },
         "created_at": {
           "type": "string",
-          "format": "date-time",
           "x-ms-summary": "Created At"
         }
       }

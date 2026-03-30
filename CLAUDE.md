@@ -123,18 +123,18 @@ python3 docrouter/docrouter-account/generate_swagger.py
 
 ## Power Automate OpenAPI types vs `../doc-router`
 
-The custom connector **Test** step compares HTTP **response** bodies to the OpenAPI **response** schemas. Mismatches show as **Expected** (from the spec) vs **Actual** (how Power Automate classifies the JSON). Fix the **account** connector by editing `docrouter/docrouter-account/generate_swagger.py`, regenerating `apiDefinition.swagger.json`, and redeploying (`update.sh`). Do **not** guess types only from JSON samples—trace them in the backend.
+The custom connector **Test** step compares HTTP **response** bodies to the OpenAPI **response** schemas. Mismatches show as **Expected** (from the spec) vs **Actual** (how Power Automate classifies the JSON). Fix the **account** connector by editing `docrouter/docrouter-account/generate_swagger.py`, regenerating `apiDefinition.swagger.json`, and redeploying (`update.sh`). Fix the **organization** connector by editing `docrouter/docrouter-org/apiDefinition.swagger.json` directly (then `update.sh`). Do **not** guess types only from JSON samples—trace them in `../doc-router`.
 
 ### Method: inspect `../doc-router` first
 
-1. **Find the route** in `../doc-router/packages/python/app/routes/` (account APIs: e.g. `orgs.py`, `users.py`, `llm.py`, `token.py`, `aws.py`).
+1. **Find the route** in `../doc-router/packages/python/app/routes/` (e.g. **account**: `users.py`, `token.py`, `aws.py`; **org**: `documents.py`, `prompts.py`, `llm.py`, `tags.py`, …).
 2. **See how the response is built**: `response_model=SomePydanticModel` vs returning dicts; follow handlers into any helper that builds nested objects.
 3. **Per field, note the source**:
    - **Raw MongoDB** (`user.get("email_verified")`, `organization.get("default_prompt_enabled")`, etc.): legacy or migrated documents may not match ideal JSON types at the wire.
    - **Computed in Python** (`bool(user.get("password"))`, arithmetic, Pydantic models with strict types): usually stable JSON booleans/numbers.
    - **Datetime**: often `datetime` serialized to ISO strings; timezone suffix may be missing depending on serializer.
    - **Nested models** (e.g. LLM lists in `llm.py`): match the Pydantic fields and numeric types (int vs float) to what FastAPI emits.
-4. **Map that to OpenAPI** definitions in `generate_swagger.py`, regenerate, validate (`paconn validate`, portal **Test**).
+4. **Map that to OpenAPI**: account connector → `generate_swagger.py` then regenerate; organization connector → edit `docrouter/docrouter-org/apiDefinition.swagger.json` (or adjust `../doc-router/docs/docrouter_power_automate_connector.yaml` before JSON conversion—keep sources consistent). Validate (`paconn validate`, portal **Test**).
 
 ### Booleans
 
@@ -162,6 +162,14 @@ If the **reverse** mismatch appears (`Expected: int32`, `Actual: undefined`), re
 ### Numbers (float)
 
 Use **`type: number`** with **`format: float`** for cost fields when FastAPI returns floats. If **Test** reports a float/format mismatch, align the definition with the real JSON (and with `../doc-router` Pydantic models in `llm.py`).
+
+### Organization connector (`docrouter-org`)
+
+The org spec is **`docrouter/docrouter-org/apiDefinition.swagger.json`** (maintained here and/or synced from `../doc-router/docs/docrouter_power_automate_connector.yaml`). There is **no** `generate_swagger.py` for org—apply the same **Expected vs Actual** rules by **editing the JSON** (or the YAML upstream, then re-export JSON).
+
+- **Timestamps**: Checked-in org definitions use plain **`string`** for timestamp fields (no **`format: date-time`**) on `Document`, `Prompt`, `LLMResult`, `KnowledgeBase`, `OCRMetadataResponse`, etc., matching the account connector’s approach to PA. If you **reconvert** from YAML, restore that convention or **Test** may regress.
+- **`ListOrgLLMModels`**: Response is **`{ "models": [ "string", ... ] }`** only (`ListLLMModelsResponse` in the org spec). It is **not** the account connector’s nested chat/embedding model objects—so the **integer / `int32`** issue seen on **`ListAccountLlmModels`** does **not** apply the same way. If **Test** ever complains on **`total`**, **`version`**, **`n_pages`**, or other integers, add **`"format": "int32"`** as in the account LLM definitions.
+- **Users / Mongo booleans**: The org connector does **not** expose account **`UserResponse`**; org APIs still return **documents, prompts, tags**, etc. If a field is raw Mongo or oddly typed and **Test** fails, use the **Booleans** table above.
 
 ## Connector Design Conventions
 
