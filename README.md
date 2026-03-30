@@ -64,7 +64,7 @@ To clear stored credentials: `./logout.sh` (or `paconn logout`).
 
 Uses `docrouter/docrouter-account/apiDefinition.swagger.json`, `apiProperties.json`, and `icon.png` only.
 
-Note the **connector id** in the output or in the Power Automate portal (**Data** → **Custom connectors**). You need it for updates.
+Each `create.sh` run prints the new **connector id** on stdout and suggests `ORG_CONNECTOR_ID` / `ACCOUNT_CONNECTOR_ID` for your repo-root `.env` (it also writes `settings.json` in that connector folder via `paconn --overwrite-settings`). You can also copy the id from **Data** → **Custom connectors** in Power Automate.
 
 ### 4. Update an existing connector
 
