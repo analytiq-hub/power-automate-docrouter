@@ -156,8 +156,9 @@ DEFS = {
         "properties": {
             "litellm_model": {"type": "string"},
             "litellm_provider": {"type": "string"},
-            "max_input_tokens": {"type": "integer"},
-            "max_output_tokens": {"type": "integer"},
+            # int32: Power Automate Test infers JSON numbers as integer int32; plain integer mismatches.
+            "max_input_tokens": {"type": "integer", "format": "int32"},
+            "max_output_tokens": {"type": "integer", "format": "int32"},
             "input_cost_per_token": {"type": "number", "format": "float"},
             "output_cost_per_token": {"type": "number", "format": "float"},
         },
@@ -167,8 +168,8 @@ DEFS = {
         "properties": {
             "litellm_model": {"type": "string"},
             "litellm_provider": {"type": "string"},
-            "max_input_tokens": {"type": "integer"},
-            "dimensions": {"type": "integer"},
+            "max_input_tokens": {"type": "integer", "format": "int32"},
+            "dimensions": {"type": "integer", "format": "int32"},
             "input_cost_per_token": {"type": "number", "format": "float"},
             "input_cost_per_token_batches": {"type": "number", "format": "float"},
         },
