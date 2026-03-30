@@ -121,6 +121,48 @@ For the **account** connector, routes live under `/v0/account/` in `../doc-route
 python3 docrouter/docrouter-account/generate_swagger.py
 ```
 
+## Power Automate OpenAPI types vs `../doc-router`
+
+The custom connector **Test** step compares HTTP **response** bodies to the OpenAPI **response** schemas. Mismatches show as **Expected** (from the spec) vs **Actual** (how Power Automate classifies the JSON). Fix the **account** connector by editing `docrouter/docrouter-account/generate_swagger.py`, regenerating `apiDefinition.swagger.json`, and redeploying (`update.sh`). Do **not** guess types only from JSON samples—trace them in the backend.
+
+### Method: inspect `../doc-router` first
+
+1. **Find the route** in `../doc-router/packages/python/app/routes/` (account APIs: e.g. `orgs.py`, `users.py`, `llm.py`, `token.py`, `aws.py`).
+2. **See how the response is built**: `response_model=SomePydanticModel` vs returning dicts; follow handlers into any helper that builds nested objects.
+3. **Per field, note the source**:
+   - **Raw MongoDB** (`user.get("email_verified")`, `organization.get("default_prompt_enabled")`, etc.): legacy or migrated documents may not match ideal JSON types at the wire.
+   - **Computed in Python** (`bool(user.get("password"))`, arithmetic, Pydantic models with strict types): usually stable JSON booleans/numbers.
+   - **Datetime**: often `datetime` serialized to ISO strings; timezone suffix may be missing depending on serializer.
+   - **Nested models** (e.g. LLM lists in `llm.py`): match the Pydantic fields and numeric types (int vs float) to what FastAPI emits.
+4. **Map that to OpenAPI** definitions in `generate_swagger.py`, regenerate, validate (`paconn validate`, portal **Test**).
+
+### Booleans
+
+| Situation in `../doc-router` | Typical PA symptom | OpenAPI adjustment |
+|------------------------------|--------------------|--------------------|
+| Field read straight from Mongo **without** coercion into a Pydantic `bool` | `Expected: boolean`, `Actual: string` (or strict boolean mismatch) | Prefer **`additionalProperties: true`** on the parent and **omit** the field from `properties`, **or** declare **`type: string`**, **or** fix the backend to coerce to `bool` before response. |
+| Field **always** computed (e.g. `has_password=bool(...)`) | Usually none | Keep **`type: "boolean"`** in the spec. |
+
+Use **`additionalProperties: true`** sparingly: it relaxes validation for undeclared keys but can hide future typing mistakes; prefer normalizing data in `../doc-router` when practical.
+
+### Integers and `int32`
+
+| Symptom | Cause | OpenAPI adjustment |
+|---------|--------|-------------------|
+| `Expected: "integer undefined"`, `Actual: "integer int32"` on token counts, dimensions, etc. | Power Automate classifies JSON integer numbers as **`integer` + `format: int32`**; a bare Swagger `integer` has no format (“undefined”). | Add **`"format": "int32"`** next to **`"type": "integer"`** for those properties (see `LLMChatModel` / `LLMEmbeddingModel` in `generate_swagger.py`). |
+
+If the **reverse** mismatch appears (`Expected: int32`, `Actual: undefined`), remove `format` from that property or align with what **Test** reports.
+
+### Date and time strings
+
+| Symptom | Cause | OpenAPI adjustment |
+|---------|--------|-------------------|
+| `Expected: string date-time`, `Actual: string undefined` on timestamps | ISO strings **without** `Z` / offset, or PA not treating the value as `date-time`. | Use plain **`type: string`** without **`format: date-time`**, or **omit** the field from strict `properties` and rely on **`additionalProperties`** on the parent object (`Organization` timestamps). |
+
+### Numbers (float)
+
+Use **`type: number`** with **`format: float`** for cost fields when FastAPI returns floats. If **Test** reports a float/format mismatch, align the definition with the real JSON (and with `../doc-router` Pydantic models in `llm.py`).
+
 ## Connector Design Conventions
 
 Follow patterns from `../PowerPlatformConnectors/independent-publisher-connectors/`:
