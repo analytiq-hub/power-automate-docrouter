@@ -53,6 +53,12 @@ public class Script : ScriptBase
             return metadataError;
         }
 
+        var webhookError = await TryNormalizeWebhookSubscribeBodyAsync().ConfigureAwait(false);
+        if (webhookError != null)
+        {
+            return webhookError;
+        }
+
         var wrapError = await TryWrapSingleDocumentUploadAsync().ConfigureAwait(false);
         if (wrapError != null)
         {
@@ -194,6 +200,102 @@ public class Script : ScriptBase
         }
 
         var newBody = root.ToString(Newtonsoft.Json.Formatting.None);
+        req.Content = new StringContent(newBody, Encoding.UTF8, "application/json");
+        req.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
+        return null;
+    }
+
+    /// <summary>
+    /// Power Automate may send only the notification URL for the webhook trigger. DocRouter expects
+    /// enabled=true for deliveries and header auth (no HMAC) for typical flow callbacks.
+    /// </summary>
+    private async Task<HttpResponseMessage> TryNormalizeWebhookSubscribeBodyAsync()
+    {
+        if (!string.Equals(this.Context.OperationId, "OnDocRouterEvent", StringComparison.Ordinal))
+        {
+            return null;
+        }
+
+        var method = this.Context.Request.Method;
+        if (method == null || !string.Equals(method.Method, "POST", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var uri = this.Context.Request.RequestUri;
+        if (uri == null)
+        {
+            return null;
+        }
+
+        var path = uri.AbsolutePath.TrimEnd('/');
+        if (!path.EndsWith("/webhooks", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var req = this.Context.Request;
+        if (req.Content == null)
+        {
+            return null;
+        }
+
+        var mediaType = req.Content.Headers.ContentType?.MediaType;
+        if (string.IsNullOrEmpty(mediaType) ||
+            mediaType.IndexOf("json", StringComparison.OrdinalIgnoreCase) < 0)
+        {
+            return null;
+        }
+
+        string json;
+        try
+        {
+            json = await req.Content.ReadAsStringAsync().ConfigureAwait(false);
+        }
+        catch
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return BadRequest("Request body is required for the DocRouter event trigger.");
+        }
+
+        JObject jobj;
+        try
+        {
+            var token = JToken.Parse(json);
+            jobj = token as JObject;
+            if (jobj == null)
+            {
+                return BadRequest("Webhook subscribe body must be a JSON object.");
+            }
+        }
+        catch (JsonReaderException ex)
+        {
+            this.Context.Logger.LogError("Webhook subscribe body is not valid JSON: {0}", ex.Message);
+            return BadRequest("Webhook subscribe body is not valid JSON.");
+        }
+
+        var urlTok = jobj["url"];
+        if (urlTok == null || urlTok.Type == JTokenType.Null ||
+            string.IsNullOrWhiteSpace(urlTok.Value<string>()))
+        {
+            return BadRequest("Webhook callback url is required.");
+        }
+
+        if (jobj["enabled"] == null || jobj["enabled"].Type == JTokenType.Null)
+        {
+            jobj["enabled"] = true;
+        }
+
+        if (jobj["auth_type"] == null || jobj["auth_type"].Type == JTokenType.Null)
+        {
+            jobj["auth_type"] = "header";
+        }
+
+        var newBody = jobj.ToString(Newtonsoft.Json.Formatting.None);
         req.Content = new StringContent(newBody, Encoding.UTF8, "application/json");
         req.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
         return null;

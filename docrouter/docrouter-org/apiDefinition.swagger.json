@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "DocRouter Organization",
+    "title": "DocRouter Organization RC4",
     "description": "DocRouter Organization: org-scoped API (paths under /v0/orgs/). Upload documents, OCR/LLM extraction, prompts, schemas, knowledge bases, webhooks. Use an organization API token (org_...) under Settings \u2192 Developer. Account-level APIs (/v0/account/) use the separate DocRouter Account connector.\n",
     "version": "1.0",
     "contact": {
@@ -104,14 +104,15 @@
       "description": "The unique identifier of the knowledge base.",
       "x-ms-url-encoding": "single"
     },
-    "subscription_id": {
-      "name": "subscription_id",
+    "webhook_endpoint_id": {
+      "name": "id",
       "in": "path",
       "required": true,
       "type": "string",
-      "x-ms-summary": "Subscription ID",
-      "description": "The unique identifier of the webhook subscription.",
-      "x-ms-url-encoding": "single"
+      "x-ms-summary": "Webhook Endpoint ID",
+      "description": "The webhook endpoint id returned when the trigger registered (same as the id property in the create response). Power Automate supplies this when unregistering.",
+      "x-ms-url-encoding": "single",
+      "x-ms-visibility": "internal"
     }
   },
   "definitions": {
@@ -717,41 +718,14 @@
         }
       }
     },
-    "WebhookSubscribeRequest": {
-      "type": "object",
-      "required": [
-        "callbackUrl"
-      ],
-      "properties": {
-        "callbackUrl": {
-          "type": "string",
-          "title": "Callback URL",
-          "x-ms-notification-url": true,
-          "x-ms-visibility": "internal"
-        },
-        "events": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": [
-              "document.uploaded",
-              "document.error",
-              "llm.completed",
-              "llm.error"
-            ]
-          },
-          "x-ms-summary": "Events",
-          "description": "Events to subscribe to. Leave empty to receive all events.",
-          "x-ms-visibility": "advanced"
-        }
-      }
-    },
     "WebhookSubscribeResponse": {
       "type": "object",
+      "additionalProperties": true,
       "properties": {
-        "subscription_id": {
+        "id": {
           "type": "string",
-          "x-ms-summary": "Subscription ID"
+          "x-ms-summary": "Webhook Endpoint ID",
+          "description": "The created webhook endpoint id. Power Automate maps this to the {id} path parameter in the unsubscribe DELETE call."
         }
       }
     },
@@ -777,6 +751,7 @@
         },
         "timestamp": {
           "type": "integer",
+          "format": "int32",
           "x-ms-summary": "Timestamp",
           "description": "Unix timestamp (seconds) when the event was fired."
         },
@@ -825,6 +800,7 @@
             },
             "prompt_version": {
               "type": "integer",
+              "format": "int32",
               "x-ms-summary": "Prompt Version"
             }
           }
@@ -2276,7 +2252,7 @@
         }
       }
     },
-    "/v0/orgs/{organization_id}/webhook/subscriptions": {
+    "/v0/orgs/{organization_id}/webhooks": {
       "x-ms-notification-content": {
         "description": "DocRouter event payload",
         "schema": {
@@ -2291,6 +2267,8 @@
           "Triggers"
         ],
         "x-ms-trigger": "single",
+        "x-ms-visibility": "important",
+        "x-ms-trigger-hint": "To verify the trigger, upload a document or use Test in DocRouter webhook settings so a webhook.test event is delivered.",
         "parameters": [
           {
             "$ref": "#/parameters/organization_id"
@@ -2299,13 +2277,14 @@
             "in": "body",
             "name": "body",
             "required": true,
+            "x-ms-visibility": "internal",
             "schema": {
               "type": "object",
               "required": [
-                "callbackUrl"
+                "url"
               ],
               "properties": {
-                "callbackUrl": {
+                "url": {
                   "type": "string",
                   "title": "Callback URL",
                   "x-ms-notification-url": true,
@@ -2331,11 +2310,35 @@
           }
         ],
         "responses": {
-          "200": {
+          "201": {
             "description": "Subscription created.",
             "schema": {
               "$ref": "#/definitions/WebhookSubscribeResponse"
             }
+          }
+        }
+      }
+    },
+    "/v0/orgs/{organization_id}/webhooks/{id}": {
+      "delete": {
+        "operationId": "DeleteDocRouterEventSubscription",
+        "summary": "Unsubscribe from DocRouter Events",
+        "description": "Deregisters the callback URL. Called automatically when the flow is turned off or deleted.\n",
+        "tags": [
+          "Triggers"
+        ],
+        "x-ms-visibility": "internal",
+        "parameters": [
+          {
+            "$ref": "#/parameters/organization_id"
+          },
+          {
+            "$ref": "#/parameters/webhook_endpoint_id"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Subscription deleted."
           }
         }
       }
