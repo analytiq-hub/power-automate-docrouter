@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "DocRouter Organization RC4",
+    "title": "DocRouter Organization RC8",
     "description": "DocRouter Organization: org-scoped API (paths under /v0/orgs/). Upload documents, OCR/LLM extraction, prompts, schemas, knowledge bases, webhooks. Use an organization API token (org_...) under Settings \u2192 Developer. Account-level APIs (/v0/account/) use the separate DocRouter Account connector.\n",
     "version": "1.0",
     "contact": {
@@ -109,8 +109,9 @@
       "in": "path",
       "required": true,
       "type": "string",
+      "default": "-",
       "x-ms-summary": "Webhook Endpoint ID",
-      "description": "The webhook endpoint id returned when the trigger registered (same as the id property in the create response). Power Automate supplies this when unregistering.",
+      "description": "The webhook endpoint id returned when the trigger was registered. Supplied automatically when unregistering.",
       "x-ms-url-encoding": "single",
       "x-ms-visibility": "internal"
     }
