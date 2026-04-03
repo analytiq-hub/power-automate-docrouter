@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "DocRouter Organization RC8",
+    "title": "DocRouter Organization RC9",
     "description": "DocRouter Organization: org-scoped API (paths under /v0/orgs/). Upload documents, OCR/LLM extraction, prompts, schemas, knowledge bases, webhooks. Use an organization API token (org_...) under Settings \u2192 Developer. Account-level APIs (/v0/account/) use the separate DocRouter Account connector.\n",
     "version": "1.0",
     "contact": {
@@ -2278,7 +2278,6 @@
             "in": "body",
             "name": "body",
             "required": true,
-            "x-ms-visibility": "internal",
             "schema": {
               "type": "object",
               "required": [
@@ -2313,6 +2312,12 @@
         "responses": {
           "201": {
             "description": "Subscription created.",
+            "headers": {
+              "Location": {
+                "type": "string",
+                "description": "URL of the created webhook subscription resource."
+              }
+            },
             "schema": {
               "$ref": "#/definitions/WebhookSubscribeResponse"
             }
@@ -2324,7 +2329,7 @@
       "delete": {
         "operationId": "DeleteDocRouterEventSubscription",
         "summary": "Unsubscribe from DocRouter Events",
-        "description": "Deregisters the callback URL. Called automatically when the flow is turned off or deleted.\n",
+        "description": "Deregisters the callback URL.",
         "tags": [
           "Triggers"
         ],
